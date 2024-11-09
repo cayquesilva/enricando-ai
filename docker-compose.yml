@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: enrica-ai-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: enrica-ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.postgres-data:/var/lib/postgresql/data
+
+volumes:
+  .postgres-data:

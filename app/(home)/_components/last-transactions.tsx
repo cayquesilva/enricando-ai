@@ -2,7 +2,7 @@ import { Button } from "@/app/_components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
 import { TRANSACTION_PAYMENT_METHOD_ICONS } from "@/app/_constants/transactions";
-import { formatCurrency } from "@/app/_utils/currency";
+import { FormatCurrency } from "@/app/_utils/currency";
 import { Transaction, TransactionType } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
@@ -66,7 +66,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
               </div>
             </div>
             <p className={`text-sm font-bold ${getAmountColor(transaction)}`}>
-              {`${getAmountPrefix(transaction)} ${formatCurrency(Number(transaction.amount))}`}
+              {`${getAmountPrefix(transaction)} ${FormatCurrency(Number(transaction.amount))}`}
             </p>
           </div>
         ))}

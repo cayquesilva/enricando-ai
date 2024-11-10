@@ -7,12 +7,25 @@ import {
 import SummaryCard from "./summary-card";
 import { db } from "@/app/_lib/prisma";
 
-const SummaryCards = async () => {
+//cria interface para receber como props o month da URL
+interface SummaryCards {
+  month: string;
+}
+
+const SummaryCards = async ({ month }: SummaryCards) => {
+  //define uma condição where, pare ser adicionada abaixo, garantindo que o mês receba todos os dias dele 01 a 31
+  const where = {
+    date: {
+      gte: new Date(`2024-${month}-01`),
+      lt: new Date(`2024-${month}-31`),
+    },
+  };
+
   //db.transaction.aggregate onde o tipo é X somando a coluna amount. (busca em banco e soma automatica)
   const depositsTotal = Number(
     (
       await db.transaction.aggregate({
-        where: { type: "DEPOSIT" },
+        where: { ...where, type: "DEPOSIT" },
         _sum: { amount: true },
       })
     )?._sum?.amount,
@@ -20,7 +33,7 @@ const SummaryCards = async () => {
   const investmentsTotal = Number(
     (
       await db.transaction.aggregate({
-        where: { type: "INVESTMENT" },
+        where: { ...where, type: "INVESTMENT" },
         _sum: { amount: true },
       })
     )?._sum?.amount,
@@ -28,7 +41,7 @@ const SummaryCards = async () => {
   const expensesTotal = Number(
     (
       await db.transaction.aggregate({
-        where: { type: "EXPENSE" },
+        where: { ...where, type: "EXPENSE" },
         _sum: { amount: true },
       })
     )?._sum?.amount,

@@ -29,7 +29,7 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
 
   //caso nao seja valido, redireciona para o mês padrão 01.
   if (monthIsInvalid) {
-    redirect("?month=01");
+    redirect(`?month=${new Date().getMonth() + 1}`);
   }
 
   //pega os dados por meio de arquivo separado, para nao passar dados sensiveis por client components

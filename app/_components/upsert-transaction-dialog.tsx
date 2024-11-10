@@ -40,10 +40,12 @@ import {
   TRANSACTION_TYPES_OPTIONS,
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
-import { addTransaction } from "../_actions/add-transaction";
+import { upsertTransaction } from "../_actions/add-transaction";
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
+  defaultValues?: FormSchema;
+  transactionId?: string;
   setIsOpen: (isOpen: boolean) => void;
 }
 
@@ -76,11 +78,13 @@ type FormSchema = z.infer<typeof formSchema>;
 
 const UpsertTransactionDialog = ({
   isOpen,
+  defaultValues,
+  transactionId,
   setIsOpen,
 }: UpsertTransactionDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       name: "",
       amount: 0,
       category: TransactionCategory.OTHER,
@@ -92,13 +96,15 @@ const UpsertTransactionDialog = ({
 
   const onSubmit = async (data: FormSchema) => {
     try {
-      await addTransaction(data);
+      await upsertTransaction({ ...data, id: transactionId });
       setIsOpen(false);
       form.reset();
     } catch (error) {
       console.error(error);
     }
   };
+
+  const isUpdate = Boolean(transactionId);
 
   return (
     <Dialog
@@ -114,7 +120,9 @@ const UpsertTransactionDialog = ({
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Adicionar Transação</DialogTitle>
+          <DialogTitle>
+            {isUpdate ? "Atualizar" : "Criar"} transação
+          </DialogTitle>
           <DialogDescription>Insira as informações abaixo</DialogDescription>
         </DialogHeader>
 
@@ -142,6 +150,7 @@ const UpsertTransactionDialog = ({
                   <FormControl>
                     <MoneyInput
                       placeholder="Digite o valor..."
+                      value={field.value}
                       onValueChange={({ floatValue }) =>
                         field.onChange(floatValue)
                       }
@@ -153,7 +162,6 @@ const UpsertTransactionDialog = ({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="type"
@@ -256,7 +264,9 @@ const UpsertTransactionDialog = ({
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit">Adicionar</Button>
+              <Button type="submit">
+                {isUpdate ? "Atualizar" : "Adicionar"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

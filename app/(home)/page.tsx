@@ -1,7 +1,7 @@
-import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "../_components/navbar";
+import SummaryCards from "./_components/summary-cards";
 
 const Home = async () => {
   //contorle de rota com o auth. só abre se tiver logado.
@@ -15,9 +15,7 @@ const Home = async () => {
   return (
     <>
       <Navbar />
-      <div className="flex h-full items-center justify-center">
-        <UserButton showName />
-      </div>
+      <SummaryCards />
     </>
   );
 };

@@ -1,3 +1,4 @@
+import AddTransactionButton from "@/app/_components/add-transaction-button";
 import { Card, CardContent, CardHeader } from "@/app/_components/ui/card";
 import { ReactNode } from "react";
 
@@ -25,7 +26,7 @@ const SummaryCard = ({
           {title}
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex justify-between">
         <p
           className={`font-bold ${size === "small" ? "text-2xl" : "text-4xl"}`}
         >
@@ -34,6 +35,9 @@ const SummaryCard = ({
             currency: "BRL",
           }).format(amount)}
         </p>
+
+        {/* Caso o componente seja do grande, vi renderizar o botão */}
+        {size === "large" && <AddTransactionButton />}
       </CardContent>
     </Card>
   );

@@ -8,7 +8,7 @@ import SummaryCard from "./summary-card";
 import { db } from "@/app/_lib/prisma";
 
 const SummaryCards = async () => {
-  //
+  //db.transaction.aggregate onde o tipo é X somando a coluna amount. (busca em banco e soma automatica)
   const depositsTotal = Number(
     (
       await db.transaction.aggregate({

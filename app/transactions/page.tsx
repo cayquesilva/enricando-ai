@@ -16,7 +16,11 @@ const TransactionsPage = async () => {
   }
 
   //acessar as transações, pois tudo é server component com o uso do approuter do next
-  const transactions = await db.transaction.findMany({});
+  const transactions = await db.transaction.findMany({
+    where: {
+      userId,
+    },
+  });
 
   return (
     <>

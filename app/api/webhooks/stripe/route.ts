@@ -26,7 +26,7 @@ export const POST = async (request: Request) => {
 
   switch (event.type) {
     //verifica tipo do evento do stripe para direcionar corretamente as ações
-    case "invoice.paid":
+    case "invoice.paid": {
       //atualizar usuario com plano novo
       const { customer, subscription, subscription_details } =
         event.data.object;
@@ -47,6 +47,31 @@ export const POST = async (request: Request) => {
         },
       });
       break;
+    }
+    //caso seja solicitação de deletar, vamos remover o plano
+    case "customer.subscription.deleted": {
+      //pega informação da inscrição, pois não vem mastigado como o evento do case anterior
+      const subscription = await stripe.subscriptions.retrieve(
+        event.data.object.id,
+      );
+
+      const clerkUserId = subscription.metadata.clerk_user_id;
+
+      if (!clerkUserId) {
+        return NextResponse.error();
+      }
+
+      //atualiza usuario no clerk, removendo o plano
+      await clerkClient().users.updateUser(clerkUserId, {
+        privateMetadata: {
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+        },
+        publicMetadata: {
+          subscriptionPlan: null,
+        },
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

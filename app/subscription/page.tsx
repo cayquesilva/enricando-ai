@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader } from "../_components/ui/card";
 import { CheckIcon, XIcon } from "lucide-react";
 import AquirePlanButton from "./_components/aquire-plan-button";
 import { Badge } from "../_components/ui/badge";
-import { db } from "../_lib/prisma";
-import { endOfMonth, startOfMonth } from "date-fns";
+import { getCurrentMonthTransactions } from "../_data/get-current-month-transactions";
 
 const SubscriptionsPage = async () => {
   //contorle de rota com o auth. só abre se tiver logado.
@@ -20,16 +19,8 @@ const SubscriptionsPage = async () => {
   const user = await clerkClient().users.getUser(userId);
   const hasPremiumPlan = user.publicMetadata.subscriptionPlan == "premium";
 
-  //contando quantas transactions tem no mês atual
-  const currentMonthTransactions = await db.transaction.count({
-    where: {
-      userId,
-      createdAt: {
-        gte: startOfMonth(new Date()),
-        lt: endOfMonth(new Date()),
-      },
-    },
-  });
+  //chama função para contabilizar transações
+  const currentMonthTransactions = await getCurrentMonthTransactions();
 
   return (
     <>

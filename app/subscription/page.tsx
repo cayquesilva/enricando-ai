@@ -3,7 +3,7 @@ import Navbar from "../_components/navbar";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "../_components/ui/card";
 import { CheckIcon, XIcon } from "lucide-react";
-import { Button } from "../_components/ui/button";
+import AquirePlanButton from "./_components/aquire-plan-button";
 
 const SubscriptionsPage = async () => {
   //contorle de rota com o auth. só abre se tiver logado.
@@ -35,7 +35,10 @@ const SubscriptionsPage = async () => {
             <CardContent className="space-y-6 py-8">
               <div className="flex items-center gap-2">
                 <CheckIcon className="text-primary" />
-                <p>Apenas 10 transações por mês (7/10)</p>
+                <p>
+                  Apenas 10 transações por mês (7/
+                  <span className="font-bold text-primary">10</span>)
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <XIcon />
@@ -61,12 +64,10 @@ const SubscriptionsPage = async () => {
                 <p>Transações ilimitadas</p>
               </div>
               <div className="flex items-center gap-2">
-                <CheckIcon />
+                <CheckIcon className="text-primary" />
                 <p>Relatórios de IA</p>
               </div>
-              <Button className="w-full rounded-full font-bold">
-                Adquirir plano
-              </Button>
+              <AquirePlanButton />
             </CardContent>
           </Card>
         </div>

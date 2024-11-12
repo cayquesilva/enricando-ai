@@ -42,7 +42,13 @@ const AiReportButton = ({ month }: AiReportButtonProps) => {
   };
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setReport(null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="ghost" className="rounded-full border">
           Relatório IA

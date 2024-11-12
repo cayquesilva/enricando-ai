@@ -34,6 +34,7 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
         gte: new Date(`2024-${month}-01`),
         lt: new Date(`2024-${month}-31`),
       },
+      userId,
     },
   });
 

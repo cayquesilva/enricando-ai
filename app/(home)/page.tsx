@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
@@ -36,6 +36,8 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
   //pega os dados por meio de arquivo separado, para nao passar dados sensiveis por client components
   const dashboard = await getDashboard(month);
 
+  //pegar o user do clerk
+  const user = await clerkClient().users.getUser(userId);
   return (
     <>
       <Navbar />
@@ -43,7 +45,12 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
         <div className="flex justify-between">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex gap-6">
-            <AiReportButton month={month} />
+            <AiReportButton
+              month={month}
+              hasPremiumPlan={
+                user.publicMetadata.subscriptionPlan === "premium"
+              }
+            />
             <TimeSelect />
           </div>
         </div>

@@ -41,6 +41,7 @@ import {
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
 import { upsertTransaction } from "../_actions/add-transaction";
+import { toast } from "sonner";
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
@@ -98,6 +99,7 @@ const UpsertTransactionDialog = ({
     try {
       await upsertTransaction({ ...data, id: transactionId });
       setIsOpen(false);
+      toast.success("Transação adicionada com sucesso.");
       form.reset();
     } catch (error) {
       console.error(error);

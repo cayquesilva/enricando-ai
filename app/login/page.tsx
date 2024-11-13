@@ -21,13 +21,13 @@ const LoginPage = async () => {
         <h1 className="mb-3 mt-4 text-4xl font-bold">Bem-vindo</h1>
         <p className="mb-8 text-muted-foreground">
           A Enrica AI é uma plataforma de gestão financeira que utiliza IA para
-          monityorar suas movimentações e oferecer insights personalizados,
-          facilitando o controle do seu orçamento
+          monitorar suas movimentações e oferecer insights personalizados,
+          facilitando o controle do seu orçamento.
         </p>
         <SignInButton>
           <Button variant={"outline"}>
             <LogInIcon className="mr-2" />
-            Fazer Login ou criar conta
+            Fazer Login ou Criar Conta
           </Button>
         </SignInButton>
       </div>

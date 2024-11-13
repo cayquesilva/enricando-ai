@@ -12,7 +12,7 @@ const LoginPage = async () => {
     redirect("/");
   }
   return (
-    <div className="grid h-full grid-cols-2">
+    <div className="h-full sm:grid sm:grid-cols-2">
       {/* ESQUERDA */}
 
       <div className="mx-auto flex h-full max-w-[550px] flex-col justify-center p-8">
@@ -34,7 +34,7 @@ const LoginPage = async () => {
 
       {/* DIREITA */}
 
-      <div className="relative h-full w-full">
+      <div className="opacity-10 sm:relative sm:h-full sm:w-full sm:opacity-100">
         <Image
           src="/login.png"
           alt="Faça login"

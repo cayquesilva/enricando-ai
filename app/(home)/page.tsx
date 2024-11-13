@@ -28,7 +28,7 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
   //verificando se o mês foi informado e se é válido no formato 01 02 03 etc... "MM"
   const monthIsInvalid = !month || !isMatch(month, "MM");
 
-  //caso nao seja valido, redireciona para o mês padrão 01.
+  //caso nao seja valido, redireciona para o mês atual.
   if (monthIsInvalid) {
     redirect(`?month=${new Date().getMonth() + 1}`);
   }

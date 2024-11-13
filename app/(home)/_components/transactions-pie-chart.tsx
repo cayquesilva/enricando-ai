@@ -14,6 +14,7 @@ import { TransactionpercentagePerType } from "@/app/_data/get-dashboard/types";
 import { PiggyBankIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import PercentageItem from "./percentage-item";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
+import { useMediaQuery } from "@/app/hook/use-media-query";
 
 const chartConfig = {
   [TransactionType.INVESTMENT]: {
@@ -61,47 +62,92 @@ const TransactionsPieChart = ({
     },
   ];
 
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
   return (
-    <ScrollArea>
-      <Card className="flex h-full flex-col overflow-hidden p-6">
-        <CardContent className="flex-1">
-          <ChartContainer
-            config={chartConfig}
-            className="mx-auto aspect-square max-h-[250px]"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
+    <>
+      {isDesktop ? (
+        <ScrollArea className="col-span-2 lg:col-span-1">
+          <Card className="flex h-full min-w-[150px] flex-col p-6">
+            <CardContent className="flex-1">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[250px]"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={chartData}
+                    dataKey="amount"
+                    nameKey="type"
+                    innerRadius={60}
+                  />
+                </PieChart>
+              </ChartContainer>
+              <div className="space-y-2">
+                <PercentageItem
+                  icon={<TrendingUpIcon size={16} className="text-primary" />}
+                  title="Receita"
+                  value={typesPercentage[TransactionType.DEPOSIT]}
+                />
+                <PercentageItem
+                  icon={<TrendingDownIcon size={16} className="text-red-500" />}
+                  title="Despesa"
+                  value={typesPercentage[TransactionType.EXPENSE]}
+                />
+                <PercentageItem
+                  icon={<PiggyBankIcon size={16} />}
+                  title="Investimento"
+                  value={typesPercentage[TransactionType.INVESTMENT]}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </ScrollArea>
+      ) : (
+        <Card className="flex h-full flex-col p-6">
+          <CardContent className="flex-1">
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto aspect-square max-h-[250px]"
+            >
+              <PieChart>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Pie
+                  data={chartData}
+                  dataKey="amount"
+                  nameKey="type"
+                  innerRadius={60}
+                />
+              </PieChart>
+            </ChartContainer>
+            <div className="space-y-2">
+              <PercentageItem
+                icon={<TrendingUpIcon size={16} className="text-primary" />}
+                title="Receita"
+                value={typesPercentage[TransactionType.DEPOSIT]}
               />
-              <Pie
-                data={chartData}
-                dataKey="amount"
-                nameKey="type"
-                innerRadius={60}
+              <PercentageItem
+                icon={<TrendingDownIcon size={16} className="text-red-500" />}
+                title="Despesa"
+                value={typesPercentage[TransactionType.EXPENSE]}
               />
-            </PieChart>
-          </ChartContainer>
-          <div className="space-y-2">
-            <PercentageItem
-              icon={<TrendingUpIcon size={16} className="text-primary" />}
-              title="Receita"
-              value={typesPercentage[TransactionType.DEPOSIT]}
-            />
-            <PercentageItem
-              icon={<TrendingDownIcon size={16} className="text-red-500" />}
-              title="Despesa"
-              value={typesPercentage[TransactionType.EXPENSE]}
-            />
-            <PercentageItem
-              icon={<PiggyBankIcon size={16} />}
-              title="Investimento"
-              value={typesPercentage[TransactionType.INVESTMENT]}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </ScrollArea>
+              <PercentageItem
+                icon={<PiggyBankIcon size={16} />}
+                title="Investimento"
+                value={typesPercentage[TransactionType.INVESTMENT]}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
   );
 };
 

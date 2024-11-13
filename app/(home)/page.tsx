@@ -38,13 +38,14 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
 
   //pegar o user do clerk
   const user = await clerkClient().users.getUser(userId);
+
   return (
     <>
       <Navbar />
-      <div className="flex h-full flex-col space-y-2 overflow-hidden p-4">
-        <div className="flex justify-between">
+      <div className="flex h-full flex-col space-y-2 p-4 lg:overflow-hidden">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="flex gap-6">
+          <div className="mb-2 flex gap-6 md:mb-0">
             <AiReportButton
               month={month}
               hasPremiumPlan={
@@ -54,10 +55,10 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
             <TimeSelect />
           </div>
         </div>
-        <div className="grid h-full grid-cols-[2fr,1fr] gap-4 overflow-hidden">
-          <div className="flex flex-col gap-4 overflow-hidden">
+        <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-[2fr,1fr] lg:overflow-hidden">
+          <div className="flex h-full flex-col gap-4 lg:overflow-hidden">
             <SummaryCards {...dashboard} />
-            <div className="grid h-full grid-cols-3 grid-rows-1 gap-4 overflow-hidden">
+            <div className="flex h-full w-full flex-col gap-4 md:grid-rows-1 lg:grid lg:grid-cols-3 lg:overflow-hidden">
               <TransactionsPieChart {...dashboard} />
               <ExpensesPerCategory
                 expensesPerCategory={dashboard.totalExpensePerCategory}

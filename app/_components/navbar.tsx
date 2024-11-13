@@ -4,9 +4,9 @@ import Link from "next/link";
 import LogoIcon from "./logo";
 import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { useMediaQuery } from "../hook/use-media-query";
 import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
 import { MenuIcon } from "lucide-react";
+import { useMediaQuery } from "../hook/use-media-query";
 
 const Navbar = () => {
   const pathname = usePathname();

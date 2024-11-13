@@ -29,7 +29,9 @@ const SummaryCard = async ({
           {title}
         </p>
       </CardHeader>
-      <CardContent className="flex justify-between">
+      <CardContent
+        className={`flex flex-col items-center justify-center gap-2 ${size === "large" ? "sm:flex-row sm:justify-between sm:gap-4" : ""}`}
+      >
         <p className={`font-bold ${size === "small" ? "text-lg" : "text-2xl"}`}>
           {Intl.NumberFormat("pt-BR", {
             style: "currency",

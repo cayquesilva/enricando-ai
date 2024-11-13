@@ -15,7 +15,7 @@ const LoginPage = async () => {
     <div className="h-full sm:grid sm:grid-cols-2">
       {/* ESQUERDA */}
 
-      <div className="mx-auto flex h-full max-w-[550px] flex-col justify-center p-8">
+      <div className="relative z-[999] mx-auto flex h-full max-w-[550px] flex-col justify-center p-8">
         <LogoIcon />
 
         <h1 className="mb-3 mt-4 text-4xl font-bold">Bem-vindo</h1>
@@ -34,7 +34,7 @@ const LoginPage = async () => {
 
       {/* DIREITA */}
 
-      <div className="opacity-10 sm:relative sm:h-full sm:w-full sm:opacity-100">
+      <div className="z-[-999] opacity-10 sm:relative sm:h-full sm:w-full sm:opacity-100">
         <Image
           src="/login.png"
           alt="Faça login"

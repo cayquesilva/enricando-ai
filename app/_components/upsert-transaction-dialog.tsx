@@ -85,14 +85,22 @@ const UpsertTransactionDialog = ({
 }: UpsertTransactionDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues ?? {
-      name: "",
-      amount: 0,
-      category: TransactionCategory.OTHER,
-      date: new Date(),
-      paymentMethod: TransactionPaymentMethod.CASH,
-      type: TransactionType.EXPENSE,
-    },
+    defaultValues: defaultValues
+      ? {
+          ...defaultValues,
+          date:
+            typeof defaultValues.date === "string"
+              ? new Date(defaultValues.date)
+              : defaultValues.date,
+        }
+      : {
+          name: "",
+          amount: 0,
+          category: TransactionCategory.OTHER,
+          date: new Date(),
+          paymentMethod: TransactionPaymentMethod.CASH,
+          type: TransactionType.EXPENSE,
+        },
   });
 
   const onSubmit = async (data: FormSchema) => {
@@ -253,8 +261,11 @@ const UpsertTransactionDialog = ({
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data</FormLabel>
-                  <DatePicker value={field.value} onChange={field.onChange} />
+                  <FormLabel>Data da transação</FormLabel>
+                  <DatePicker
+                    value={field.value}
+                    onChange={(date) => field.onChange(date || new Date())}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

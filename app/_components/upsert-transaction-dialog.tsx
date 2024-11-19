@@ -78,6 +78,10 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A data é obrigatória.",
   }),
+  installments: z
+    .number()
+    .min(1, "O número de parcelas deve ser no mínimo 1.")
+    .optional(),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -91,6 +95,8 @@ const UpsertTransactionDialog = ({
   const [selectedType, setSelectedType] = useState<TransactionType>(
     TransactionType.EXPENSE,
   );
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<TransactionPaymentMethod | null>(null);
 
   // Alterando o estado do tipo ao selecionar um novo tipo
   const handleTypeChange = (value: string) => {
@@ -98,6 +104,18 @@ const UpsertTransactionDialog = ({
     setSelectedType(newType);
     form.setValue("type", newType); // Atualiza o valor do formulário
   };
+
+  // Alterando o estado do método de pagamento ao selecionar um novo método
+  const handlePaymentMethodChange = (value: string) => {
+    const newMethod = value as TransactionPaymentMethod;
+    setSelectedPaymentMethod(newMethod);
+    form.setValue("paymentMethod", newMethod);
+  };
+
+  // Transforma em true ou false o showInstallMents caso a escolha seja despesa e cartão de crédito.
+  const showInstallmentsField =
+    selectedType === TransactionType.EXPENSE &&
+    selectedPaymentMethod === TransactionPaymentMethod.CREDIT_CARD;
 
   // Definir opções de categoria com base no tipo selecionado
   const filteredCategoryOptions =
@@ -260,7 +278,10 @@ const UpsertTransactionDialog = ({
                 <FormItem>
                   <FormLabel>Forma de Pagamento</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      handlePaymentMethodChange(value);
+                      field.onChange(value);
+                    }}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -280,6 +301,27 @@ const UpsertTransactionDialog = ({
                 </FormItem>
               )}
             />
+
+            {/* Campo de Parcelas Condicional */}
+            {showInstallmentsField && (
+              <FormField
+                control={form.control}
+                name="installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantidade de Parcelas</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Digite a quantidade de parcelas"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

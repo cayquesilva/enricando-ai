@@ -24,6 +24,7 @@ model Transaction {
   createdAt     DateTime                 @default(now())
   udatedAt      DateTime                 @updatedAt
   userId        String
+  installments  Int?
 }
 
 enum TransactionType {

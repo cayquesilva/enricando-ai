@@ -95,8 +95,9 @@ const UpsertTransactionDialog = ({
   const [selectedType, setSelectedType] = useState<TransactionType>(
     TransactionType.EXPENSE,
   );
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<TransactionPaymentMethod | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    TransactionPaymentMethod | undefined
+  >(defaultValues?.paymentMethod);
 
   // Alterando o estado do tipo ao selecionar um novo tipo
   const handleTypeChange = (value: string) => {

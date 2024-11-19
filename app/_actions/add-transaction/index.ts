@@ -18,6 +18,7 @@ interface UpsertTransactionParams {
   category: TransactionCategory;
   paymentMethod: TransactionPaymentMethod;
   date: Date;
+  installments: number;
 }
 
 export const upsertTransaction = async (params: UpsertTransactionParams) => {

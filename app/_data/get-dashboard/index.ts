@@ -2,10 +2,13 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
+//import { addMonths  } from "date-fns";
 
 export const getDashboard = async (month: string) => {
   //segurança de autenticação
   const { userId } = await auth();
+
+  //const currentDate = new Date();
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -17,6 +20,11 @@ export const getDashboard = async (month: string) => {
     date: {
       gte: new Date(`2024-${month}-01`),
       lt: new Date(`2024-${month}-31`),
+    },
+    //verificar aqui a variação de meses
+    installments: {
+      gt: 0,
+      lt: 42,
     },
   };
 
@@ -46,8 +54,10 @@ export const getDashboard = async (month: string) => {
     )?._sum?.amount,
   );
 
+  //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;
 
+  //busca a soma de todas as transações do mês e do usuario logado
   const transactionsTotal = Number(
     (
       await db.transaction.aggregate({
@@ -91,11 +101,14 @@ export const getDashboard = async (month: string) => {
       ),
     }));
 
+  //busca as ultimas 15 transações do mês
   const lastTransactions = await db.transaction.findMany({
     where,
     orderBy: { date: "desc" },
     take: 15,
   });
+
+  console.log("lastTransactions:", lastTransactions); // Log para verificar o resultado da consulta
 
   return {
     balance,

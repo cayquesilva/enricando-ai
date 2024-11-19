@@ -38,7 +38,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "installments",
     header: "Parcelas",
     cell: ({ row: { original: transaction } }) =>
-      `${transaction.paymentMethod === "CREDIT_CARD" ? `( 1 / ${transaction.installments} )` : ""}`,
+      `${transaction.paymentMethod === "CREDIT_CARD" ? `${transaction.installments}` : "-"}`,
   },
   {
     accessorKey: "date",

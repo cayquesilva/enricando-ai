@@ -35,6 +35,12 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       TRANSACTION_PAYMENT_METHOD_LABELS[transaction.paymentMethod],
   },
   {
+    accessorKey: "installments",
+    header: "Parcelas",
+    cell: ({ row: { original: transaction } }) =>
+      `${transaction.paymentMethod === "CREDIT_CARD" ? `( 1 / ${transaction.installments} )` : ""}`,
+  },
+  {
     accessorKey: "date",
     header: "Data",
     cell: ({ row: { original: transaction } }) =>

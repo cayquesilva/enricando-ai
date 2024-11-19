@@ -81,7 +81,7 @@ const formSchema = z.object({
   installments: z
     .number()
     .min(1, "O número de parcelas deve ser no mínimo 1.")
-    .optional(),
+    .max(42, "O número de parcelas deve ser no máximo 42."),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -132,6 +132,9 @@ const UpsertTransactionDialog = ({
             typeof defaultValues.date === "string"
               ? new Date(defaultValues.date)
               : defaultValues.date,
+          installments: defaultValues.installments
+            ? parseInt(defaultValues.installments.toString(), 10)
+            : defaultValues.installments,
         }
       : {
           name: "",
@@ -140,6 +143,7 @@ const UpsertTransactionDialog = ({
           date: new Date(),
           paymentMethod: TransactionPaymentMethod.CASH,
           type: TransactionType.EXPENSE,
+          installments: 1,
         },
   });
 

@@ -51,7 +51,9 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
                   }
                   width={20}
                   height={20}
-                  alt="PIX"
+                  alt={
+                    TRANSACTION_PAYMENT_METHOD_ICONS[transaction.paymentMethod]
+                  }
                 />
               </div>
               <div>
@@ -62,6 +64,11 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
                     month: "short",
                     year: "numeric",
                   })}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {transaction.paymentMethod === "CREDIT_CARD"
+                    ? `parc. (1 / ${transaction.installments})`
+                    : ""}
                 </p>
               </div>
             </div>

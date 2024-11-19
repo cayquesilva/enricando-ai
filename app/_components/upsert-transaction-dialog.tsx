@@ -320,6 +320,8 @@ const UpsertTransactionDialog = ({
                         type="number"
                         placeholder="Digite a quantidade de parcelas"
                         {...field}
+                        //onChange para transformar sempre em numero.
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />

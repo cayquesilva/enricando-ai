@@ -42,6 +42,14 @@ enum TransactionCategory {
   SALARY
   EDUCATION
   OTHER
+  ACOES
+  CDB
+  CDI
+  CRIPTO
+  FUNDOS
+  RFIXA
+  POUPANCA
+  TDIRETO
 }
 
 enum TransactionPaymentMethod {

@@ -36,12 +36,14 @@ import {
 } from "./ui/select";
 import {
   TRANSACTION_CATEGORY_OPTIONS,
+  TRANSACTION_INVESTMENTS_CATEGORY_OPTIONS,
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
   TRANSACTION_TYPES_OPTIONS,
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
 import { upsertTransaction } from "../_actions/add-transaction";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
@@ -60,6 +62,9 @@ const formSchema = z.object({
     })
     .positive({
       message: "O valor deve ser positivo.",
+    })
+    .max(999999.99, {
+      message: "O valor máximo deve ser de até R$999.999,99.",
     }),
   type: z.nativeEnum(TransactionType, {
     required_error: "O tipo é obrigatório.",
@@ -83,6 +88,23 @@ const UpsertTransactionDialog = ({
   transactionId,
   setIsOpen,
 }: UpsertTransactionDialogProps) => {
+  const [selectedType, setSelectedType] = useState<TransactionType>(
+    TransactionType.EXPENSE,
+  );
+
+  // Alterando o estado do tipo ao selecionar um novo tipo
+  const handleTypeChange = (value: string) => {
+    const newType = value as TransactionType;
+    setSelectedType(newType);
+    form.setValue("type", newType); // Atualiza o valor do formulário
+  };
+
+  // Definir opções de categoria com base no tipo selecionado
+  const filteredCategoryOptions =
+    selectedType === TransactionType.INVESTMENT
+      ? TRANSACTION_INVESTMENTS_CATEGORY_OPTIONS
+      : TRANSACTION_CATEGORY_OPTIONS;
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues
@@ -179,7 +201,10 @@ const UpsertTransactionDialog = ({
                 <FormItem>
                   <FormLabel>Tipo</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      handleTypeChange(value);
+                      field.onChange(value); // Atualiza o valor do tipo
+                    }}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -216,7 +241,7 @@ const UpsertTransactionDialog = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
+                      {filteredCategoryOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

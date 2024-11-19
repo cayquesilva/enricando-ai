@@ -14,6 +14,14 @@ export const TRANSACTION_CATEGORY_LABELS = {
   SALARY: "Salário",
   TRANSPORTATION: "Transporte",
   UTILITY: "Utilidades",
+  ACOES: "Ações",
+  CDB: "CDB",
+  CDI: "CDI",
+  CRIPTO: "Cripto",
+  FUNDOS: "Fundos de Investimento",
+  RFIXA: "Renda Fixa",
+  POUPANCA: "Poupança",
+  TDIRETO: "Tesouro Direto",
 };
 
 export const TRANSACTION_PAYMENT_METHOD_ICONS = {
@@ -118,5 +126,40 @@ export const TRANSACTION_CATEGORY_OPTIONS = [
   {
     value: TransactionCategory.UTILITY,
     label: TRANSACTION_CATEGORY_LABELS.UTILITY,
+  },
+];
+
+export const TRANSACTION_INVESTMENTS_CATEGORY_OPTIONS = [
+  {
+    value: TransactionCategory.ACOES,
+    label: TRANSACTION_CATEGORY_LABELS.ACOES,
+  },
+  {
+    value: TransactionCategory.CDB,
+    label: TRANSACTION_CATEGORY_LABELS.CDB,
+  },
+  {
+    value: TransactionCategory.CDI,
+    label: TRANSACTION_CATEGORY_LABELS.CDI,
+  },
+  {
+    value: TransactionCategory.CRIPTO,
+    label: TRANSACTION_CATEGORY_LABELS.CRIPTO,
+  },
+  {
+    value: TransactionCategory.FUNDOS,
+    label: TRANSACTION_CATEGORY_LABELS.FUNDOS,
+  },
+  {
+    value: TransactionCategory.RFIXA,
+    label: TRANSACTION_CATEGORY_LABELS.RFIXA,
+  },
+  {
+    value: TransactionCategory.POUPANCA,
+    label: TRANSACTION_CATEGORY_LABELS.POUPANCA,
+  },
+  {
+    value: TransactionCategory.TDIRETO,
+    label: TRANSACTION_CATEGORY_LABELS.TDIRETO,
   },
 ];

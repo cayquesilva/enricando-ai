@@ -51,7 +51,7 @@ export const TRANSACTION_TYPES_OPTIONS = [
   },
   {
     value: TransactionType.DEPOSIT,
-    label: "Depósito",
+    label: "Receita",
   },
   {
     value: TransactionType.INVESTMENT,

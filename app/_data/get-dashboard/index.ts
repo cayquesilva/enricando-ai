@@ -19,6 +19,7 @@ export const getDashboard = async (month: string) => {
   // Defina o intervalo para o mês atual
   const currentMonthStart = startOfMonth(referenceDate);
   const currentMonthEnd = endOfMonth(referenceDate);
+
   console.log("inicio do mes: ", currentMonthStart);
   console.log("fim do mes: ", currentMonthEnd);
 

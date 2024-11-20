@@ -92,7 +92,8 @@ export const getDashboard = async (month: string) => {
   // Defina o intervalo para o mês atual
   const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
   const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
-
+  console.log("inicio do mes: ", currentMonthStart);
+  console.log("fim do mes: ", currentMonthEnd);
   // Busque todas as transações (podemos filtrar inicialmente por tipo ou data, dependendo do banco)
   const transactions = await db.transaction.findMany({
     where: {
@@ -242,7 +243,7 @@ export const getDashboard = async (month: string) => {
     take: 15,
   });
 
-  //console.log("lastTransactions:", lastTransactions); // Log para verificar o resultado da consulta
+  console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta
 
   const filteredTransactions = lastTransactions.filter((transaction) => {
     // Calcula a data limite com base no número de installments
@@ -255,7 +256,7 @@ export const getDashboard = async (month: string) => {
     );
   });
 
-  //console.log("Transações filtradas:", filteredTransactions);
+  console.log("Transações filtradas:", filteredTransactions);
 
   return {
     balance,

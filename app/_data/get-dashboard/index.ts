@@ -110,12 +110,6 @@ export const getDashboard = async (month: string) => {
   const filteredTransactions = lastTransactions.filter((transaction) => {
     // Calcula a data limite com base no número de installments
     const maxValidDate = addMonths(transaction.date, transaction.installments);
-    console.log("data da transação: ", transaction.date);
-    console.log("data limite do mes: ", subDays(startOfMonth(maxValidDate), 1));
-    console.log(
-      "fim do mes selecionado: ",
-      subDays(addMonths(referenceDate, 1), 1),
-    );
     return (
       transaction.date <= subDays(startOfMonth(maxValidDate), 1) &&
       subDays(startOfMonth(maxValidDate), 1) >=
@@ -124,7 +118,7 @@ export const getDashboard = async (month: string) => {
     );
   });
 
-  console.log("Transações filtradas:", filteredTransactions);
+  //console.log("Transações filtradas:", filteredTransactions);
 
   return {
     balance,

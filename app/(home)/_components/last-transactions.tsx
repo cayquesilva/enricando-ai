@@ -4,14 +4,19 @@ import { ScrollArea } from "@/app/_components/ui/scroll-area";
 import { TRANSACTION_PAYMENT_METHOD_ICONS } from "@/app/_constants/transactions";
 import { FormatCurrency } from "@/app/_utils/currency";
 import { Transaction, TransactionType } from "@prisma/client";
+import { differenceInMonths, startOfMonth } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 
 interface LastTransactionsProps {
   lastTransactions: Transaction[];
+  month: string;
 }
 
-const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
+const LastTransactions = ({
+  lastTransactions,
+  month,
+}: LastTransactionsProps) => {
   const getAmountColor = (transaction: Transaction) => {
     if (transaction.type === TransactionType.EXPENSE) {
       return "text-red-500";
@@ -67,7 +72,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {transaction.paymentMethod === "CREDIT_CARD"
-                    ? `parc. (1 / ${transaction.installments})`
+                    ? `parc. (${differenceInMonths(new Date(`2024-${month}-31`), startOfMonth(transaction.date)) + 1} / ${transaction.installments})`
                     : ""}
                 </p>
               </div>
@@ -75,7 +80,7 @@ const LastTransactions = ({ lastTransactions }: LastTransactionsProps) => {
             <p
               className={`mt-1 text-sm font-bold lg:mt-0 ${getAmountColor(transaction)}`}
             >
-              {`${getAmountPrefix(transaction)} ${FormatCurrency(Number(transaction.amount))}`}
+              {`${getAmountPrefix(transaction)} ${FormatCurrency(Number(transaction.amount) / transaction.installments)}`}
             </p>
           </div>
         ))}

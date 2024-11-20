@@ -2,13 +2,13 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
-//import { addMonths  } from "date-fns";
+import { addMonths, subDays, startOfMonth } from "date-fns";
 
 export const getDashboard = async (month: string) => {
   //segurança de autenticação
   const { userId } = await auth();
 
-  //const currentDate = new Date();
+  const referenceDate = new Date(`2024-${month}-01`);
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -20,11 +20,6 @@ export const getDashboard = async (month: string) => {
     date: {
       gte: new Date(`2024-${month}-01`),
       lt: new Date(`2024-${month}-31`),
-    },
-    //verificar aqui a variação de meses
-    installments: {
-      gt: 0,
-      lt: 42,
     },
   };
 
@@ -103,12 +98,33 @@ export const getDashboard = async (month: string) => {
 
   //busca as ultimas 15 transações do mês
   const lastTransactions = await db.transaction.findMany({
-    where,
+    where: {
+      userId,
+    },
     orderBy: { date: "desc" },
     take: 15,
   });
 
-  console.log("lastTransactions:", lastTransactions); // Log para verificar o resultado da consulta
+  //console.log("lastTransactions:", lastTransactions); // Log para verificar o resultado da consulta
+
+  const filteredTransactions = lastTransactions.filter((transaction) => {
+    // Calcula a data limite com base no número de installments
+    const maxValidDate = addMonths(transaction.date, transaction.installments);
+    console.log("data da transação: ", transaction.date);
+    console.log("data limite do mes: ", subDays(startOfMonth(maxValidDate), 1));
+    console.log(
+      "fim do mes selecionado: ",
+      subDays(addMonths(referenceDate, 1), 1),
+    );
+    return (
+      transaction.date <= subDays(startOfMonth(maxValidDate), 1) &&
+      subDays(startOfMonth(maxValidDate), 1) >=
+        subDays(addMonths(referenceDate, 1), 1) &&
+      transaction.date <= subDays(addMonths(referenceDate, 1), 1)
+    );
+  });
+
+  console.log("Transações filtradas:", filteredTransactions);
 
   return {
     balance,
@@ -117,6 +133,6 @@ export const getDashboard = async (month: string) => {
     expensesTotal,
     typesPercentage,
     totalExpensePerCategory,
-    lastTransactions: JSON.parse(JSON.stringify(lastTransactions)),
+    lastTransactions: JSON.parse(JSON.stringify(filteredTransactions)),
   };
 };

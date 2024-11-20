@@ -55,8 +55,8 @@ export const getDashboard = async (month: string) => {
       OR: Array.from({ length: 12 }, (_, i) => ({
         // Para cada mês, verificamos se ele está dentro do intervalo de parcelas
         date: {
-          gte: subDays(addMonths(referenceDate, -i), 1), // Mês anterior até o atual
-          lt: subDays(addMonths(referenceDate, 1), 1), // Próximo mês
+          gte: addMonths(referenceDate, -i), // Mês anterior até o atual
+          lt: addMonths(referenceDate, 1), // Próximo mês
         },
       })),
     },
@@ -79,6 +79,7 @@ export const getDashboard = async (month: string) => {
       installment.date.getMonth() === referenceDate.getMonth(),
   );
 
+  console.log("parcelasFiltradas: ", filteredDistributedExpenses);
   // Somar as despesas do mês
   const expensesTotal = filteredDistributedExpenses.reduce(
     (total, installment) => total + installment.amount,

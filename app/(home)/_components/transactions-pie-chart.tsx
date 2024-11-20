@@ -91,17 +91,29 @@ const TransactionsPieChart = ({
                 <PercentageItem
                   icon={<TrendingUpIcon size={16} className="text-primary" />}
                   title="Receita"
-                  value={typesPercentage[TransactionType.DEPOSIT]}
+                  value={
+                    typesPercentage[TransactionType.DEPOSIT] > 0
+                      ? typesPercentage[TransactionType.DEPOSIT]
+                      : 0
+                  }
                 />
                 <PercentageItem
                   icon={<TrendingDownIcon size={16} className="text-red-500" />}
                   title="Despesa"
-                  value={typesPercentage[TransactionType.EXPENSE]}
+                  value={
+                    typesPercentage[TransactionType.EXPENSE] > 0
+                      ? typesPercentage[TransactionType.EXPENSE]
+                      : 0
+                  }
                 />
                 <PercentageItem
                   icon={<PiggyBankIcon size={16} />}
                   title="Investimento"
-                  value={typesPercentage[TransactionType.INVESTMENT]}
+                  value={
+                    typesPercentage[TransactionType.INVESTMENT] > 0
+                      ? typesPercentage[TransactionType.INVESTMENT]
+                      : 0
+                  }
                 />
               </div>
             </CardContent>
@@ -131,17 +143,29 @@ const TransactionsPieChart = ({
               <PercentageItem
                 icon={<TrendingUpIcon size={16} className="text-primary" />}
                 title="Receita"
-                value={typesPercentage[TransactionType.DEPOSIT]}
+                value={
+                  typesPercentage[TransactionType.DEPOSIT] > 0
+                    ? typesPercentage[TransactionType.DEPOSIT]
+                    : 0
+                }
               />
               <PercentageItem
                 icon={<TrendingDownIcon size={16} className="text-red-500" />}
                 title="Despesa"
-                value={typesPercentage[TransactionType.EXPENSE]}
+                value={
+                  typesPercentage[TransactionType.EXPENSE] > 0
+                    ? typesPercentage[TransactionType.EXPENSE]
+                    : 0
+                }
               />
               <PercentageItem
                 icon={<PiggyBankIcon size={16} />}
                 title="Investimento"
-                value={typesPercentage[TransactionType.INVESTMENT]}
+                value={
+                  typesPercentage[TransactionType.INVESTMENT] > 0
+                    ? typesPercentage[TransactionType.INVESTMENT]
+                    : 0
+                }
               />
             </div>
           </CardContent>

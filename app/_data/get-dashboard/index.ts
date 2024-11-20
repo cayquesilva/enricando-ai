@@ -40,14 +40,19 @@ export const getDashboard = async (month: string) => {
       })
     )?._sum?.amount,
   );
-  const expensesTotal = Number(
-    (
-      await db.transaction.aggregate({
-        where: { ...where, type: "EXPENSE" },
-        _sum: { amount: true },
-      })
-    )?._sum?.amount,
-  );
+
+  const expenses = await db.transaction.findMany({
+    where: {
+      ...where,
+      type: "EXPENSE",
+    },
+  });
+
+  const expensesTotal = expenses.reduce((total, transaction) => {
+    const installmentAmount =
+      Number(transaction.amount) / (transaction.installments || 1); // Divide pelo número de parcelas
+    return total + installmentAmount;
+  }, 0);
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;

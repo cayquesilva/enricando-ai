@@ -2,7 +2,13 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
-import { addMonths, subDays, startOfMonth, subMonths } from "date-fns";
+import {
+  addMonths,
+  subDays,
+  startOfMonth,
+  subMonths,
+  endOfMonth,
+} from "date-fns";
 
 export const getDashboard = async (month: string) => {
   //segurança de autenticação
@@ -82,15 +88,67 @@ export const getDashboard = async (month: string) => {
   const balance = depositsTotal - investmentsTotal - expensesTotal;
 
   //busca a soma de todas as transações do mês e do usuario logado
+  // Defina o intervalo para o mês atual
+  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
+  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
+
+  // Busque todas as transações (podemos filtrar inicialmente por tipo ou data, dependendo do banco)
   const transactions = await db.transaction.findMany({
-    where,
+    where: {
+      OR: [
+        {
+          date: {
+            gte: currentMonthStart, // Transações do mês atual
+            lte: currentMonthEnd,
+          },
+        },
+        { installments: { gte: 1 } }, // Transações parceladas
+      ],
+    },
   });
 
+  // Calcule o total, considerando parcelas a vencer
   const transactionsTotal = transactions.reduce((total, transaction) => {
-    const installmentAmount =
-      Number(transaction.amount) / (transaction.installments || 1); // Divide pelo número de parcelas, assumindo 1 se não houver parcelas
-    return total + installmentAmount;
+    if (transaction.installments && transaction.installments > 1) {
+      // Valor de cada parcela
+      console.log("transacoes com parcela:", transaction);
+      console.log("data inicial: ", currentMonthStart);
+      console.log("data final: ", currentMonthEnd);
+      const installmentAmount =
+        Number(transaction.amount) / transaction.installments;
+
+      // Verifique cada parcela individualmente
+      for (let i = 0; i < transaction.installments; i++) {
+        const installmentMonth = addMonths(transaction.date, i); // Data da parcela
+        if (installmentMonth > currentMonthEnd) {
+          break; // Ignora parcelas após o mês atual
+        }
+        if (
+          installmentMonth >= currentMonthStart &&
+          installmentMonth <= currentMonthEnd
+        ) {
+          total += installmentAmount; // Adicione parcela dentro do mês atual
+        }
+      }
+    } else {
+      // Transações não parceladas
+      console.log("transacoes sem parcelas:", transaction);
+      console.log("data inicial: ", currentMonthStart);
+      console.log("data final: ", currentMonthEnd);
+
+      if (
+        transaction.date >= currentMonthStart &&
+        transaction.date <= currentMonthEnd
+      ) {
+        total += Number(transaction.amount); // Soma o valor total
+      }
+    }
+
+    return total;
   }, 0);
+
+  console.log("transações total: ", transactionsTotal);
+  console.log("despesas total: ", expensesTotal);
 
   const typesPercentage: TransactionpercentagePerType = {
     [TransactionType.DEPOSIT]: Math.round(

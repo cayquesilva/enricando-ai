@@ -8,6 +8,7 @@ import {
   startOfMonth,
   subMonths,
   endOfMonth,
+  isAfter,
 } from "date-fns";
 
 export const getDashboard = async (month: string) => {
@@ -111,9 +112,6 @@ export const getDashboard = async (month: string) => {
   const transactionsTotal = transactions.reduce((total, transaction) => {
     if (transaction.installments && transaction.installments > 1) {
       // Valor de cada parcela
-      console.log("transacoes com parcela:", transaction);
-      console.log("data inicial: ", currentMonthStart);
-      console.log("data final: ", currentMonthEnd);
       const installmentAmount =
         Number(transaction.amount) / transaction.installments;
 
@@ -132,10 +130,6 @@ export const getDashboard = async (month: string) => {
       }
     } else {
       // Transações não parceladas
-      console.log("transacoes sem parcelas:", transaction);
-      console.log("data inicial: ", currentMonthStart);
-      console.log("data final: ", currentMonthEnd);
-
       if (
         transaction.date >= currentMonthStart &&
         transaction.date <= currentMonthEnd
@@ -146,9 +140,6 @@ export const getDashboard = async (month: string) => {
 
     return total;
   }, 0);
-
-  console.log("transações total: ", transactionsTotal);
-  console.log("despesas total: ", expensesTotal);
 
   const typesPercentage: TransactionpercentagePerType = {
     [TransactionType.DEPOSIT]: Math.round(
@@ -164,13 +155,22 @@ export const getDashboard = async (month: string) => {
 
   const expensesCategory = await db.transaction.findMany({
     where: {
-      ...where,
       type: TransactionType.EXPENSE,
+      OR: [
+        {
+          date: {
+            gte: currentMonthStart, // Transações do mês atual
+            lte: currentMonthEnd,
+          },
+        },
+        { installments: { gte: 1 } }, // Transações parceladas
+      ],
     },
     select: {
       category: true,
       amount: true,
       installments: true,
+      date: true, // Necessário para calcular as parcelas futuras
     },
   });
 
@@ -181,18 +181,49 @@ export const getDashboard = async (month: string) => {
     const existingCategory = totalExpensePerCategory.find(
       (category) => category.category === expense.category,
     );
-
+    console.log("transacao :", expense);
     // Ajuste: divide o valor da transação pelo número de parcelas
     const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
 
-    if (existingCategory) {
-      existingCategory.totalAmount += adjustedAmount;
+    // Se for uma transação parcelada, precisamos verificar quais parcelas estão a vencer
+    if (expense.installments && expense.installments > 1) {
+      for (let i = 0; i < expense.installments; i++) {
+        const installmentMonth = addMonths(expense.date, i); // Calcula o mês da parcela
+        if (isAfter(installmentMonth, currentMonthEnd)) {
+          break; // Parcela futura, não relevante
+        }
+        if (
+          installmentMonth >= currentMonthStart &&
+          installmentMonth <= currentMonthEnd
+        ) {
+          // Se a parcela é do mês atual, adiciona o valor ajustado
+          if (existingCategory) {
+            existingCategory.totalAmount += adjustedAmount;
+          } else {
+            totalExpensePerCategory.push({
+              category: expense.category,
+              totalAmount: adjustedAmount,
+              percentageOfTotal: 0, // Inicializamos com 0, a porcentagem será calculada depois
+            });
+          }
+        }
+      }
     } else {
-      totalExpensePerCategory.push({
-        category: expense.category,
-        totalAmount: adjustedAmount,
-        percentageOfTotal: 0, // Inicializamos com 0, a porcentagem será calculada depois
-      });
+      // Transações não parceladas: basta adicionar o valor completo
+      if (
+        expense.date >= currentMonthStart &&
+        expense.date <= currentMonthEnd
+      ) {
+        if (existingCategory) {
+          existingCategory.totalAmount += adjustedAmount;
+        } else {
+          totalExpensePerCategory.push({
+            category: expense.category,
+            totalAmount: adjustedAmount,
+            percentageOfTotal: 0, // Inicializamos com 0, a porcentagem será calculada depois
+          });
+        }
+      }
     }
   });
 

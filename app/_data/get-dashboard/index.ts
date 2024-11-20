@@ -58,14 +58,15 @@ export const getDashboard = async (month: string) => {
   const balance = depositsTotal - investmentsTotal - expensesTotal;
 
   //busca a soma de todas as transações do mês e do usuario logado
-  const transactionsTotal = Number(
-    (
-      await db.transaction.aggregate({
-        where,
-        _sum: { amount: true },
-      })
-    )._sum.amount,
-  );
+  const transactions = await db.transaction.findMany({
+    where,
+  });
+
+  const transactionsTotal = transactions.reduce((total, transaction) => {
+    const installmentAmount =
+      Number(transaction.amount) / (transaction.installments || 1); // Divide pelo número de parcelas, assumindo 1 se não houver parcelas
+    return total + installmentAmount;
+  }, 0);
 
   const typesPercentage: TransactionpercentagePerType = {
     [TransactionType.DEPOSIT]: Math.round(
@@ -79,27 +80,46 @@ export const getDashboard = async (month: string) => {
     ),
   };
 
-  const totalExpensePerCategory: TotalExpensePerCategory[] =
-    //groupby junta as categorias e soma cada uma de forma separada
-    //depois da map em cada categoria para pegar a porcentagem
-    (
-      await db.transaction.groupBy({
-        by: ["category"],
-        where: {
-          ...where,
-          type: TransactionType.EXPENSE,
-        },
-        _sum: {
-          amount: true,
-        },
-      })
-    ).map((category) => ({
-      category: category.category,
-      totalAmount: Number(category._sum.amount),
-      percentageOfTotal: Math.round(
-        (Number(category._sum.amount) / Number(expensesTotal)) * 100,
-      ),
-    }));
+  const expensesCategory = await db.transaction.findMany({
+    where: {
+      ...where,
+      type: TransactionType.EXPENSE,
+    },
+    select: {
+      category: true,
+      amount: true,
+      installments: true,
+    },
+  });
+
+  const totalExpensePerCategory: TotalExpensePerCategory[] = [];
+
+  // Agrupa as transações por categoria e ajusta o valor considerando as parcelas
+  expensesCategory.forEach((expense) => {
+    const existingCategory = totalExpensePerCategory.find(
+      (category) => category.category === expense.category,
+    );
+
+    // Ajuste: divide o valor da transação pelo número de parcelas
+    const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
+
+    if (existingCategory) {
+      existingCategory.totalAmount += adjustedAmount;
+    } else {
+      totalExpensePerCategory.push({
+        category: expense.category,
+        totalAmount: adjustedAmount,
+        percentageOfTotal: 0, // Inicializamos com 0, a porcentagem será calculada depois
+      });
+    }
+  });
+
+  // Agora calcule a porcentagem de cada categoria
+  totalExpensePerCategory.forEach((category) => {
+    category.percentageOfTotal = Math.round(
+      (category.totalAmount / expensesTotal) * 100,
+    );
+  });
 
   //busca as ultimas 15 transações do mês
   const lastTransactions = await db.transaction.findMany({

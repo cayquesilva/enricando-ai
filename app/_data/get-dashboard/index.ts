@@ -2,7 +2,7 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
-import { addMonths, subDays, startOfMonth } from "date-fns";
+import { addMonths, subDays, startOfMonth, subMonths } from "date-fns";
 
 export const getDashboard = async (month: string) => {
   //segurança de autenticação
@@ -43,16 +43,40 @@ export const getDashboard = async (month: string) => {
 
   const expenses = await db.transaction.findMany({
     where: {
-      ...where,
+      userId,
       type: "EXPENSE",
+      OR: Array.from({ length: 12 }, (_, i) => ({
+        // Para cada mês, verificamos se ele está dentro do intervalo de parcelas
+        date: {
+          gte: subDays(addMonths(referenceDate, -i), 1), // Mês anterior até o atual
+          lt: subDays(addMonths(referenceDate, 1), 1), // Próximo mês
+        },
+      })),
     },
   });
 
-  const expensesTotal = expenses.reduce((total, transaction) => {
+  // Mapear parcelas individuais para cada transação
+  const distributedExpenses = expenses.flatMap((transaction) => {
     const installmentAmount =
-      Number(transaction.amount) / (transaction.installments || 1); // Divide pelo número de parcelas
-    return total + installmentAmount;
-  }, 0);
+      Number(transaction.amount) / (transaction.installments || 1); // Divide o valor pelo número de parcelas
+    return Array.from({ length: transaction.installments }, (_, index) => ({
+      date: subMonths(addMonths(transaction.date, index), 1),
+      amount: installmentAmount,
+    }));
+  });
+
+  // Filtrar apenas as parcelas que pertencem ao mês de referência
+  const filteredDistributedExpenses = distributedExpenses.filter(
+    (installment) =>
+      installment.date.getFullYear() === referenceDate.getFullYear() &&
+      installment.date.getMonth() === referenceDate.getMonth(),
+  );
+
+  // Somar as despesas do mês
+  const expensesTotal = filteredDistributedExpenses.reduce(
+    (total, installment) => total + installment.amount,
+    0,
+  );
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;

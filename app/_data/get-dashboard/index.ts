@@ -6,7 +6,6 @@ import {
   addMonths,
   subDays,
   startOfMonth,
-  subMonths,
   endOfMonth,
   isAfter,
 } from "date-fns";
@@ -67,7 +66,7 @@ export const getDashboard = async (month: string) => {
     const installmentAmount =
       Number(transaction.amount) / (transaction.installments || 1); // Divide o valor pelo número de parcelas
     return Array.from({ length: transaction.installments }, (_, index) => ({
-      date: subMonths(addMonths(transaction.date, index), 1),
+      date: addMonths(transaction.date, index),
       amount: installmentAmount,
     }));
   });

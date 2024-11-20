@@ -17,8 +17,8 @@ export const getDashboard = async (month: string) => {
   const referenceDate = new Date(`2024-${month}-01`);
 
   // Defina o intervalo para o mês atual
-  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
-  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
+  const currentMonthStart = startOfMonth(referenceDate);
+  const currentMonthEnd = endOfMonth(referenceDate);
   console.log("inicio do mes: ", currentMonthStart);
   console.log("fim do mes: ", currentMonthEnd);
 

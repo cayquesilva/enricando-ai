@@ -16,6 +16,12 @@ export const getDashboard = async (month: string) => {
 
   const referenceDate = new Date(`2024-${month}-01`);
 
+  // Defina o intervalo para o mês atual
+  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
+  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
+  console.log("inicio do mes: ", currentMonthStart);
+  console.log("fim do mes: ", currentMonthEnd);
+
   if (!userId) {
     throw new Error("Não autorizado.");
   }
@@ -24,8 +30,8 @@ export const getDashboard = async (month: string) => {
   const where = {
     userId,
     date: {
-      gte: new Date(`2024-${month}-01`),
-      lt: new Date(`2024-${month}-31`),
+      gte: currentMonthStart, // Transações do mês atual
+      lte: currentMonthEnd,
     },
   };
 
@@ -89,11 +95,7 @@ export const getDashboard = async (month: string) => {
   const balance = depositsTotal - investmentsTotal - expensesTotal;
 
   //busca a soma de todas as transações do mês e do usuario logado
-  // Defina o intervalo para o mês atual
-  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
-  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
-  console.log("inicio do mes: ", currentMonthStart);
-  console.log("fim do mes: ", currentMonthEnd);
+
   // Busque todas as transações (podemos filtrar inicialmente por tipo ou data, dependendo do banco)
   const transactions = await db.transaction.findMany({
     where: {

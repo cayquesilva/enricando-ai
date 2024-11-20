@@ -20,8 +20,8 @@ export const getDashboard = async (month: string) => {
   const currentMonthStart = startOfMonth(referenceDate);
   const currentMonthEnd = endOfMonth(referenceDate);
 
-  console.log("inicio do mes: ", currentMonthStart);
-  console.log("fim do mes: ", currentMonthEnd);
+  //console.log("inicio do mes: ", currentMonthStart);
+  //console.log("fim do mes: ", currentMonthEnd);
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -85,7 +85,7 @@ export const getDashboard = async (month: string) => {
       installment.date.getMonth() === referenceDate.getMonth(),
   );
 
-  console.log("parcelasFiltradas: ", filteredDistributedExpenses);
+  //console.log("parcelasFiltradas: ", filteredDistributedExpenses);
   // Somar as despesas do mês
   const expensesTotal = filteredDistributedExpenses.reduce(
     (total, installment) => total + installment.amount,
@@ -94,8 +94,6 @@ export const getDashboard = async (month: string) => {
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;
-
-  //busca a soma de todas as transações do mês e do usuario logado
 
   // Busque todas as transações (podemos filtrar inicialmente por tipo ou data, dependendo do banco)
   const transactions = await db.transaction.findMany({
@@ -246,7 +244,7 @@ export const getDashboard = async (month: string) => {
     take: 15,
   });
 
-  console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta
+  //console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta
 
   const filteredTransactions = lastTransactions.filter((transaction) => {
     // Calcula a data limite com base no número de installments
@@ -259,7 +257,7 @@ export const getDashboard = async (month: string) => {
     );
   });
 
-  console.log("Transações filtradas:", filteredTransactions);
+  //console.log("Transações filtradas:", filteredTransactions);
 
   return {
     balance,

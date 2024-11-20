@@ -181,7 +181,6 @@ export const getDashboard = async (month: string) => {
     const existingCategory = totalExpensePerCategory.find(
       (category) => category.category === expense.category,
     );
-    console.log("transacao :", expense);
     // Ajuste: divide o valor da transação pelo número de parcelas
     const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
 

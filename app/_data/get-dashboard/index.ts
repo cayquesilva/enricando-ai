@@ -98,6 +98,7 @@ export const getDashboard = async (month: string) => {
   // Busque todas as transações (podemos filtrar inicialmente por tipo ou data, dependendo do banco)
   const transactions = await db.transaction.findMany({
     where: {
+      userId,
       OR: [
         {
           date: {
@@ -157,6 +158,7 @@ export const getDashboard = async (month: string) => {
 
   const expensesCategory = await db.transaction.findMany({
     where: {
+      userId,
       type: TransactionType.EXPENSE,
       OR: [
         {

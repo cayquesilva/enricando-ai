@@ -241,6 +241,10 @@ export const getDashboard = async (month: string) => {
   const lastTransactions = await db.transaction.findMany({
     where: {
       userId,
+      date: {
+        gte: currentMonthStart, // Transações do mês atual
+        lte: currentMonthEnd,
+      },
     },
     orderBy: { date: "desc" },
     take: 15,

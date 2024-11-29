@@ -52,22 +52,13 @@ export const getDashboard = async (month: string, year: string) => {
     where: {
       userId,
       type: "EXPENSE",
-      OR: [
-        // Transações no mês atual
-        {
-          date: {
-            gte: currentMonthStart, // Início do mês atual
-            lte: currentMonthEnd, // Fim do mês atual
-          },
+      OR: Array.from({ length: 12 }, (_, i) => ({
+        // Para cada mês, verificamos se ele está dentro do intervalo de parcelas
+        date: {
+          gte: addMonths(referenceDate, -i), // Mês anterior até o atual
+          lt: addMonths(referenceDate, 1), // Próximo mês
         },
-        // Transações anteriores com parcelas futuras
-        {
-          installments: { gte: 1 }, // Transações parceladas
-          date: {
-            lte: currentMonthEnd, // Até o fim do mês atual
-          },
-        },
-      ],
+      })),
     },
   });
 

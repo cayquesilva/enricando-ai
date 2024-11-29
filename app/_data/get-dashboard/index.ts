@@ -70,13 +70,21 @@ export const getDashboard = async (month: string, year: string) => {
   });
 
   // Filtrar apenas as parcelas que pertencem ao mês e ano de referência
+  // Considera também parcelas futuras
   const filteredDistributedExpenses = distributedExpenses.filter(
-    (installment) =>
-      installment.date.getFullYear() === referenceDate.getFullYear() && // Mesmo ano
-      installment.date.getMonth() === referenceDate.getMonth(), // Mesmo mês
+    (installment) => {
+      const installmentDate = installment.date;
+      // Verificar se a parcela é do mês de referência ou está a vencer no mês de referência
+      return (
+        (installmentDate.getFullYear() === referenceDate.getFullYear() &&
+          installmentDate.getMonth() === referenceDate.getMonth()) ||
+        // Considera parcelas a vencer no mês de referência
+        (installmentDate > endOfMonth(referenceDate) &&
+          installmentDate.getFullYear() === referenceDate.getFullYear())
+      );
+    },
   );
 
-  //console.log("parcelasFiltradas: ", filteredDistributedExpenses);
   // Somar as despesas do mês
   const expensesTotal = filteredDistributedExpenses.reduce(
     (total, installment) => total + installment.amount,

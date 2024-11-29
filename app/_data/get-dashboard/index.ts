@@ -73,10 +73,11 @@ export const getDashboard = async (month: string, year: string) => {
 
   // Filtra as transações para considerar aquelas com parcelas a vencer no mês de referência
   const filteredExpenses = expenses.filter((expense) => {
-    if (expense.installments && expense.installments > 0) {
+    if (expense.installments && expense.installments > 1) {
       // Para transações parceladas, verificamos cada parcela individualmente
       for (let i = 0; i < expense.installments; i++) {
         const installmentMonth = addMonths(expense.date, i); // Mês da parcela
+        console.log("mes da parcela: ", installmentMonth);
         if (
           installmentMonth >= currentMonthStart &&
           installmentMonth <= currentMonthEnd
@@ -84,13 +85,13 @@ export const getDashboard = async (month: string, year: string) => {
           return true; // A parcela vence dentro do mês de referência
         }
       }
-    } else {
-      // Para transações não parceladas, consideramos todas que estão no mês de referência
+    } else if (expense.installments === 1) {
+      // Para transações não parceladas (installments === 1), consideramos se a data está no mês de referência
       return (
         expense.date >= currentMonthStart && expense.date <= currentMonthEnd
       );
     }
-    return false; // Se não houver parcelas no mês de referência, retorna false
+    return false; // Se não houver parcelas no mês de referência ou não for no mês de referência
   });
 
   console.log("despesas filtradas: ", filteredExpenses);

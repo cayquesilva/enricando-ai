@@ -2,18 +2,26 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
-import { addMonths, subDays, startOfMonth, endOfMonth } from "date-fns";
+import {
+  addMonths,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+  isAfter,
+} from "date-fns";
 
 export const getDashboard = async (month: string, year: string) => {
   //segurança de autenticação
   const { userId } = await auth();
 
-  const referenceDate = new Date(`${year}-${month}-01`);
+  const adjustedYear = year ? Number(year) : new Date().getFullYear();
+
+  const referenceDate = new Date(`${adjustedYear}-${month}-01`);
 
   // Defina o intervalo para o mês atual
-  const currentMonthStart = startOfMonth(referenceDate);
-  //um dia a menos para funcionar em localhost... nao sei pq?
-  const currentMonthEnd = subDays(endOfMonth(referenceDate), 1);
+  //remover addmonths e subdays para usar em produção
+  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
+  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
 
   console.log("inicio do mes: ", currentMonthStart);
   console.log("fim do mes: ", currentMonthEnd);
@@ -53,49 +61,66 @@ export const getDashboard = async (month: string, year: string) => {
     where: {
       userId,
       type: "EXPENSE",
-      OR: Array.from({ length: 12 }, (_, i) => ({
-        // Para cada mês, verificamos se ele está dentro do intervalo de parcelas
-        date: {
-          gte: addMonths(referenceDate, -i), // Mês anterior até o atual
-          lt: addMonths(referenceDate, 1), // Próximo mês
+      AND: [
+        {
+          installments: {
+            gte: 1, // Somente transações parceladas
+          },
         },
-      })),
+      ],
     },
   });
 
-  // Mapear parcelas individuais para cada transação
-  const distributedExpenses = expenses.flatMap((transaction) => {
-    const installmentAmount =
-      Number(transaction.amount) / (transaction.installments || 1); // Valor por parcela
-    return Array.from({ length: transaction.installments }, (_, index) => ({
-      date: addMonths(transaction.date, index), // Data de cada parcela
-      amount: installmentAmount, // Valor da parcela
-    }));
-  });
-
-  console.log("parcelas por transacao: ", distributedExpenses);
-
-  // Filtrar apenas as parcelas que pertencem ao mês e ano de referência
-  // Considera também parcelas futuras
-  const filteredDistributedExpenses = distributedExpenses.filter(
-    (installment) => {
-      const installmentDate = installment.date;
-      // Verificar se a parcela é do mês de referência ou está a vencer no mês de referência
+  // Filtra as transações para considerar aquelas com parcelas a vencer no mês de referência
+  const filteredExpenses = expenses.filter((expense) => {
+    if (expense.installments && expense.installments > 0) {
+      // Para transações parceladas, verificamos cada parcela individualmente
+      for (let i = 0; i < expense.installments; i++) {
+        const installmentMonth = addMonths(expense.date, i); // Mês da parcela
+        if (
+          installmentMonth >= currentMonthStart &&
+          installmentMonth <= currentMonthEnd
+        ) {
+          return true; // A parcela vence dentro do mês de referência
+        }
+      }
+    } else {
+      // Para transações não parceladas, consideramos todas que estão no mês de referência
       return (
-        (installmentDate.getFullYear() === referenceDate.getFullYear() &&
-          installmentDate.getMonth() === referenceDate.getMonth()) ||
-        // Considera parcelas a vencer no mês de referência
-        (installmentDate > endOfMonth(referenceDate) &&
-          installmentDate.getFullYear() === referenceDate.getFullYear())
+        expense.date >= currentMonthStart && expense.date <= currentMonthEnd
       );
-    },
-  );
+    }
+    return false; // Se não houver parcelas no mês de referência, retorna false
+  });
 
-  // Somar as despesas do mês, mas agora com apenas uma parcela por transação, não multiplicando o valor total das parcelas
-  const expensesTotal = filteredDistributedExpenses.reduce(
+  console.log("despesas filtradas: ", filteredExpenses);
+
+  // Mapear parcelas individuais para cada transação, incluindo as transações inteiras do mês de referência
+  const distributedExpenses = filteredExpenses.flatMap((transaction) => {
+    const installmentAmount =
+      Number(transaction.amount) / (transaction.installments || 1); // Divide o valor total pelo número de parcelas
+
+    // Gerar as parcelas para a transação
+    return Array.from({ length: transaction.installments }, (_, index) => {
+      const installmentDate = addMonths(transaction.date, index); // Data da parcela
+      const isInstallmentInReferenceMonth =
+        installmentDate.getFullYear() === referenceDate.getFullYear() &&
+        installmentDate.getMonth() === referenceDate.getMonth();
+
+      // Retorna somente a parcela se ela for do mês de referência, caso contrário, não inclui
+      return isInstallmentInReferenceMonth
+        ? { date: installmentDate, amount: installmentAmount }
+        : null; // Não inclui parcelas de meses anteriores
+    }).filter((installment) => installment !== null); // Filtra as parcelas nulas (de meses anteriores)
+  });
+
+  // Somar as despesas do mês de referência, considerando somente parcelas de transações no mês de referência
+  const expensesTotal = distributedExpenses.reduce(
     (total, installment) => total + installment.amount,
     0,
   );
+
+  console.log("Despesas do mês de referência: ", expensesTotal);
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;
@@ -107,10 +132,11 @@ export const getDashboard = async (month: string, year: string) => {
       OR: [
         {
           date: {
-            lte: currentMonthEnd, // Inclui transações até o final do mês de referência
+            gte: currentMonthStart, // Transações do mês atual
+            lte: currentMonthEnd,
           },
         },
-        { installments: { gte: 1 } }, // Inclui transações parceladas
+        { installments: { gte: 1 } }, // Transações parceladas
       ],
     },
   });
@@ -124,14 +150,15 @@ export const getDashboard = async (month: string, year: string) => {
 
       // Verifique cada parcela individualmente
       for (let i = 0; i < transaction.installments; i++) {
-        const installmentDate = addMonths(transaction.date, i); // Data da parcela
-
-        // Considera apenas parcelas dentro do intervalo do mês/ano selecionado, incluindo futuras
+        const installmentMonth = addMonths(transaction.date, i); // Data da parcela
+        if (installmentMonth > currentMonthEnd) {
+          break; // Ignora parcelas após o mês atual
+        }
         if (
-          installmentDate.getFullYear() === referenceDate.getFullYear() &&
-          installmentDate.getMonth() === referenceDate.getMonth()
+          installmentMonth >= currentMonthStart &&
+          installmentMonth <= currentMonthEnd
         ) {
-          total += installmentAmount; // Adiciona o valor da parcela
+          total += installmentAmount; // Adicione parcela dentro do mês atual
         }
       }
     } else {
@@ -166,10 +193,11 @@ export const getDashboard = async (month: string, year: string) => {
       OR: [
         {
           date: {
-            lte: currentMonthEnd, // Inclui transações até o final do mês de referência
+            gte: currentMonthStart, // Transações do mês atual
+            lte: currentMonthEnd,
           },
         },
-        { installments: { gte: 1 } }, // Inclui transações parceladas
+        { installments: { gte: 1 } }, // Transações parceladas
       ],
     },
     select: {
@@ -187,7 +215,6 @@ export const getDashboard = async (month: string, year: string) => {
     const existingCategory = totalExpensePerCategory.find(
       (category) => category.category === expense.category,
     );
-
     // Ajuste: divide o valor da transação pelo número de parcelas
     const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
 
@@ -195,13 +222,14 @@ export const getDashboard = async (month: string, year: string) => {
     if (expense.installments && expense.installments > 1) {
       for (let i = 0; i < expense.installments; i++) {
         const installmentMonth = addMonths(expense.date, i); // Calcula o mês da parcela
-
-        // Verifica se a parcela cai dentro do intervalo de meses/anos selecionados
+        if (isAfter(installmentMonth, currentMonthEnd)) {
+          break; // Parcela futura, não relevante
+        }
         if (
-          installmentMonth.getFullYear() === referenceDate.getFullYear() &&
-          installmentMonth.getMonth() === referenceDate.getMonth()
+          installmentMonth >= currentMonthStart &&
+          installmentMonth <= currentMonthEnd
         ) {
-          // Se a parcela é do mês/ano de referência, adiciona o valor ajustado
+          // Se a parcela é do mês atual, adiciona o valor ajustado
           if (existingCategory) {
             existingCategory.totalAmount += adjustedAmount;
           } else {
@@ -243,25 +271,9 @@ export const getDashboard = async (month: string, year: string) => {
   const lastTransactions = await db.transaction.findMany({
     where: {
       userId,
-      OR: [
-        // Transações no mês atual
-        {
-          date: {
-            gte: currentMonthStart, // Início do mês atual
-            lte: currentMonthEnd, // Fim do mês atual
-          },
-        },
-        // Transações anteriores com parcelas futuras
-        {
-          installments: { gte: 1 }, // Transações parceladas
-          date: {
-            lte: currentMonthEnd, // Até o fim do mês atual
-          },
-        },
-      ],
     },
-    orderBy: { date: "desc" }, // Ordena pela data, mais recentes primeiro
-    take: 15, // Limita o número de transações a 15
+    orderBy: { date: "desc" },
+    take: 15,
   });
 
   //console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta
@@ -269,17 +281,11 @@ export const getDashboard = async (month: string, year: string) => {
   const filteredTransactions = lastTransactions.filter((transaction) => {
     // Calcula a data limite com base no número de installments
     const maxValidDate = addMonths(transaction.date, transaction.installments);
-
-    // Verifica se a transação deve ser considerada
     return (
-      // Condição para transações que se enquadram no período entre a data de referência e a data final do mês
       transaction.date <= subDays(startOfMonth(maxValidDate), 1) &&
       subDays(startOfMonth(maxValidDate), 1) >=
         subDays(addMonths(referenceDate, 1), 1) &&
-      transaction.date <= subDays(addMonths(referenceDate, 1), 1) &&
-      // Adiciona a condição para verificar se a transação foi do mês atual ou se possui parcelas em aberto
-      (transaction.date >= currentMonthStart ||
-        (transaction.installments && transaction.installments > 1))
+      transaction.date <= subDays(addMonths(referenceDate, 1), 1)
     );
   });
 

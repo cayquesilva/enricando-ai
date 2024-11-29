@@ -20,8 +20,8 @@ export const getDashboard = async (month: string, year: string) => {
   const currentMonthStart = startOfMonth(referenceDate);
   const currentMonthEnd = endOfMonth(referenceDate);
 
-  //console.log("inicio do mes: ", currentMonthStart);
-  //console.log("fim do mes: ", currentMonthEnd);
+  console.log("inicio do mes: ", currentMonthStart);
+  console.log("fim do mes: ", currentMonthEnd);
 
   if (!userId) {
     throw new Error("Não autorizado.");

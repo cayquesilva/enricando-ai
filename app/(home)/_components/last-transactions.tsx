@@ -11,11 +11,13 @@ import Link from "next/link";
 interface LastTransactionsProps {
   lastTransactions: Transaction[];
   month: string;
+  year: string;
 }
 
 const LastTransactions = ({
   lastTransactions,
   month,
+  year,
 }: LastTransactionsProps) => {
   const getAmountColor = (transaction: Transaction) => {
     if (transaction.type === TransactionType.EXPENSE) {
@@ -72,7 +74,7 @@ const LastTransactions = ({
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {transaction.paymentMethod === "CREDIT_CARD"
-                    ? `parc. (${differenceInMonths(new Date(`2024-${month}-30`), startOfMonth(transaction.date)) + 1} / ${transaction.installments})`
+                    ? `parc. (${differenceInMonths(new Date(`${year}-${month}-30`), startOfMonth(transaction.date)) + 1} / ${transaction.installments})`
                     : ""}
                 </p>
               </div>

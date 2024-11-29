@@ -10,11 +10,11 @@ import {
   isAfter,
 } from "date-fns";
 
-export const getDashboard = async (month: string) => {
+export const getDashboard = async (month: string, year: string) => {
   //segurança de autenticação
   const { userId } = await auth();
 
-  const referenceDate = new Date(`2024-${month}-01`);
+  const referenceDate = new Date(`${year}-${month}-01`);
 
   // Defina o intervalo para o mês atual
   const currentMonthStart = startOfMonth(referenceDate);

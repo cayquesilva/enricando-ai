@@ -21,9 +21,14 @@ import Link from "next/link";
 interface AiReportButtonProps {
   hasPremiumPlan: boolean;
   month: string;
+  year: string;
 }
 
-const AiReportButton = ({ month, hasPremiumPlan }: AiReportButtonProps) => {
+const AiReportButton = ({
+  month,
+  hasPremiumPlan,
+  year,
+}: AiReportButtonProps) => {
   //salva as respostas do chatgpt
   const [report, setReport] = useState<string | null>();
 
@@ -34,7 +39,7 @@ const AiReportButton = ({ month, hasPremiumPlan }: AiReportButtonProps) => {
   const handleGenerateReportClick = async () => {
     try {
       setReportIsLoading(true);
-      const aiReport = await generateAiReport({ month });
+      const aiReport = await generateAiReport({ month, year });
       setReport(aiReport);
     } catch (error) {
       console.error(error);

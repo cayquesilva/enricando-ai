@@ -25,16 +25,16 @@ const MONTH_OPTIONS = [
 ];
 
 const TimeSelect = () => {
-  //direciona dados para a URL
-  const { push } = useRouter();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  //pega o month passado como valor e adiciona a URL o texto do push
+  // Atualiza o parâmetro 'month' sem remover outros parâmetros
   const handleMonthChange = (month: string) => {
-    push(`/?month=${month}`);
+    const params = new URLSearchParams(searchParams.toString()); // Clona os parâmetros existentes
+    params.set("month", month); // Define ou atualiza o parâmetro 'month'
+    router.push(`?${params.toString()}`); // Atualiza a URL com os novos parâmetros
   };
 
-  //acessando informação na URL "?month"
-  const searchParams = useSearchParams();
   const month = searchParams.get("month");
 
   return (

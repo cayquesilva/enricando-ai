@@ -20,8 +20,8 @@ export const getDashboard = async (month: string, year: string) => {
   const currentMonthStart = startOfMonth(referenceDate);
   const currentMonthEnd = endOfMonth(referenceDate);
 
-  console.log("inicio do mes: ", currentMonthStart);
-  console.log("fim do mes: ", currentMonthEnd);
+  //console.log("inicio do mes: ", currentMonthStart);
+  //console.log("fim do mes: ", currentMonthEnd);
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -58,31 +58,28 @@ export const getDashboard = async (month: string, year: string) => {
     where: {
       userId,
       type: "EXPENSE",
-      OR: Array.from({ length: 12 }, (_, i) => ({
-        // Para cada mês, verificamos se ele está dentro do intervalo de parcelas
-        date: {
-          gte: addMonths(referenceDate, -i), // Mês anterior até o atual
-          lt: addMonths(referenceDate, 1), // Próximo mês
-        },
-      })),
+      date: {
+        gte: startOfMonth(referenceDate), // Início do mês de referência
+        lte: endOfMonth(referenceDate), // Fim do mês de referência
+      },
     },
   });
 
   // Mapear parcelas individuais para cada transação
   const distributedExpenses = expenses.flatMap((transaction) => {
     const installmentAmount =
-      Number(transaction.amount) / (transaction.installments || 1); // Divide o valor pelo número de parcelas
+      Number(transaction.amount) / (transaction.installments || 1); // Valor por parcela
     return Array.from({ length: transaction.installments }, (_, index) => ({
-      date: addMonths(transaction.date, index),
-      amount: installmentAmount,
+      date: addMonths(transaction.date, index), // Data de cada parcela
+      amount: installmentAmount, // Valor da parcela
     }));
   });
 
-  // Filtrar apenas as parcelas que pertencem ao mês de referência
+  // Filtrar apenas as parcelas que pertencem ao mês e ano de referência
   const filteredDistributedExpenses = distributedExpenses.filter(
     (installment) =>
-      installment.date.getFullYear() === referenceDate.getFullYear() &&
-      installment.date.getMonth() === referenceDate.getMonth(),
+      installment.date.getFullYear() === referenceDate.getFullYear() && // Mesmo ano
+      installment.date.getMonth() === referenceDate.getMonth(), // Mesmo mês
   );
 
   //console.log("parcelasFiltradas: ", filteredDistributedExpenses);

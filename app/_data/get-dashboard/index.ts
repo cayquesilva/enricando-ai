@@ -2,13 +2,7 @@ import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
-import {
-  addMonths,
-  subDays,
-  startOfMonth,
-  endOfMonth,
-  isAfter,
-} from "date-fns";
+import { addMonths, subDays, startOfMonth, endOfMonth } from "date-fns";
 
 export const getDashboard = async (month: string, year: string) => {
   //segurança de autenticação
@@ -158,11 +152,10 @@ export const getDashboard = async (month: string, year: string) => {
       OR: [
         {
           date: {
-            gte: currentMonthStart, // Transações do mês atual
-            lte: currentMonthEnd,
+            lte: currentMonthEnd, // Inclui transações até o final do mês de referência
           },
         },
-        { installments: { gte: 1 } }, // Transações parceladas
+        { installments: { gte: 1 } }, // Inclui transações parceladas
       ],
     },
     select: {
@@ -180,6 +173,7 @@ export const getDashboard = async (month: string, year: string) => {
     const existingCategory = totalExpensePerCategory.find(
       (category) => category.category === expense.category,
     );
+
     // Ajuste: divide o valor da transação pelo número de parcelas
     const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
 
@@ -187,14 +181,13 @@ export const getDashboard = async (month: string, year: string) => {
     if (expense.installments && expense.installments > 1) {
       for (let i = 0; i < expense.installments; i++) {
         const installmentMonth = addMonths(expense.date, i); // Calcula o mês da parcela
-        if (isAfter(installmentMonth, currentMonthEnd)) {
-          break; // Parcela futura, não relevante
-        }
+
+        // Verifica se a parcela cai dentro do intervalo de meses/anos selecionados
         if (
-          installmentMonth >= currentMonthStart &&
-          installmentMonth <= currentMonthEnd
+          installmentMonth.getFullYear() === referenceDate.getFullYear() &&
+          installmentMonth.getMonth() === referenceDate.getMonth()
         ) {
-          // Se a parcela é do mês atual, adiciona o valor ajustado
+          // Se a parcela é do mês/ano de referência, adiciona o valor ajustado
           if (existingCategory) {
             existingCategory.totalAmount += adjustedAmount;
           } else {
@@ -236,13 +229,25 @@ export const getDashboard = async (month: string, year: string) => {
   const lastTransactions = await db.transaction.findMany({
     where: {
       userId,
-      date: {
-        gte: currentMonthStart, // Transações do mês atual
-        lte: currentMonthEnd,
-      },
+      OR: [
+        // Transações no mês atual
+        {
+          date: {
+            gte: currentMonthStart, // Início do mês atual
+            lte: currentMonthEnd, // Fim do mês atual
+          },
+        },
+        // Transações anteriores com parcelas futuras
+        {
+          installments: { gte: 1 }, // Transações parceladas
+          date: {
+            lte: currentMonthEnd, // Até o fim do mês atual
+          },
+        },
+      ],
     },
-    orderBy: { date: "desc" },
-    take: 15,
+    orderBy: { date: "desc" }, // Ordena pela data, mais recentes primeiro
+    take: 15, // Limita o número de transações a 15
   });
 
   //console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta
@@ -250,11 +255,17 @@ export const getDashboard = async (month: string, year: string) => {
   const filteredTransactions = lastTransactions.filter((transaction) => {
     // Calcula a data limite com base no número de installments
     const maxValidDate = addMonths(transaction.date, transaction.installments);
+
+    // Verifica se a transação deve ser considerada
     return (
+      // Condição para transações que se enquadram no período entre a data de referência e a data final do mês
       transaction.date <= subDays(startOfMonth(maxValidDate), 1) &&
       subDays(startOfMonth(maxValidDate), 1) >=
         subDays(addMonths(referenceDate, 1), 1) &&
-      transaction.date <= subDays(addMonths(referenceDate, 1), 1)
+      transaction.date <= subDays(addMonths(referenceDate, 1), 1) &&
+      // Adiciona a condição para verificar se a transação foi do mês atual ou se possui parcelas em aberto
+      (transaction.date >= currentMonthStart ||
+        (transaction.installments && transaction.installments > 1))
     );
   });
 

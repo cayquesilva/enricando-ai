@@ -88,7 +88,7 @@ export const getDashboard = async (month: string, year: string) => {
     },
   );
 
-  // Somar as despesas do mês
+  // Somar as despesas do mês, mas agora com apenas uma parcela por transação, não multiplicando o valor total das parcelas
   const expensesTotal = filteredDistributedExpenses.reduce(
     (total, installment) => total + installment.amount,
     0,

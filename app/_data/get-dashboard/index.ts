@@ -99,11 +99,10 @@ export const getDashboard = async (month: string, year: string) => {
       OR: [
         {
           date: {
-            gte: currentMonthStart, // Transações do mês atual
-            lte: currentMonthEnd,
+            lte: currentMonthEnd, // Inclui transações até o final do mês de referência
           },
         },
-        { installments: { gte: 1 } }, // Transações parceladas
+        { installments: { gte: 1 } }, // Inclui transações parceladas
       ],
     },
   });
@@ -117,15 +116,14 @@ export const getDashboard = async (month: string, year: string) => {
 
       // Verifique cada parcela individualmente
       for (let i = 0; i < transaction.installments; i++) {
-        const installmentMonth = addMonths(transaction.date, i); // Data da parcela
-        if (installmentMonth > currentMonthEnd) {
-          break; // Ignora parcelas após o mês atual
-        }
+        const installmentDate = addMonths(transaction.date, i); // Data da parcela
+
+        // Considera apenas parcelas dentro do intervalo do mês/ano selecionado
         if (
-          installmentMonth >= currentMonthStart &&
-          installmentMonth <= currentMonthEnd
+          installmentDate.getFullYear() === referenceDate.getFullYear() &&
+          installmentDate.getMonth() === referenceDate.getMonth()
         ) {
-          total += installmentAmount; // Adicione parcela dentro do mês atual
+          total += installmentAmount; // Adiciona o valor da parcela
         }
       }
     } else {

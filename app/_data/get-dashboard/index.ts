@@ -112,7 +112,7 @@ export const getDashboard = async (month: string, year: string) => {
       for (let i = 0; i < transaction.installments; i++) {
         const installmentDate = addMonths(transaction.date, i); // Data da parcela
 
-        // Considera apenas parcelas dentro do intervalo do mês/ano selecionado
+        // Considera apenas parcelas dentro do intervalo do mês/ano selecionado, incluindo futuras
         if (
           installmentDate.getFullYear() === referenceDate.getFullYear() &&
           installmentDate.getMonth() === referenceDate.getMonth()

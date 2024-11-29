@@ -12,10 +12,11 @@ export const getDashboard = async (month: string, year: string) => {
 
   // Defina o intervalo para o mês atual
   const currentMonthStart = startOfMonth(referenceDate);
-  const currentMonthEnd = endOfMonth(referenceDate);
+  //um dia a menos para funcionar em localhost... nao sei pq?
+  const currentMonthEnd = subDays(endOfMonth(referenceDate), 1);
 
-  //console.log("inicio do mes: ", currentMonthStart);
-  //console.log("fim do mes: ", currentMonthEnd);
+  console.log("inicio do mes: ", currentMonthStart);
+  console.log("fim do mes: ", currentMonthEnd);
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -71,6 +72,8 @@ export const getDashboard = async (month: string, year: string) => {
       amount: installmentAmount, // Valor da parcela
     }));
   });
+
+  console.log("parcelas por transacao: ", distributedExpenses);
 
   // Filtrar apenas as parcelas que pertencem ao mês e ano de referência
   // Considera também parcelas futuras

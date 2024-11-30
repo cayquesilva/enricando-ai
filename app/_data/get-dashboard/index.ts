@@ -71,7 +71,7 @@ export const getDashboard = async (month: string, year: string) => {
 
   // Filtra as transações para considerar aquelas com parcelas a vencer no mês de referência
   const filteredExpenses = expenses.filter((expense) => {
-    if (expense.installments && expense.installments > 1) {
+    if (expense.installments && expense.installments >= 1) {
       // Para transações parceladas, verificamos cada parcela individualmente
       for (let i = 0; i < expense.installments; i++) {
         const installmentMonth = addMonths(expense.date, i); // Mês da parcela

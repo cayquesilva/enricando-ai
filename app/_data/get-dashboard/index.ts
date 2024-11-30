@@ -21,8 +21,8 @@ export const getDashboard = async (month: string, year: string) => {
   const currentMonthStart = startOfMonth(referenceDate);
   const currentMonthEnd = endOfMonth(referenceDate);
 
-  console.log("inicio do mes: ", currentMonthStart);
-  console.log("fim do mes: ", currentMonthEnd);
+  //console.log("inicio do mes: ", currentMonthStart);
+  //console.log("fim do mes: ", currentMonthEnd);
 
   if (!userId) {
     throw new Error("Não autorizado.");
@@ -92,7 +92,7 @@ export const getDashboard = async (month: string, year: string) => {
     return false;
   });
 
-  console.log("transações filtradas: ", filteredExpenses);
+  //console.log("transações filtradas: ", filteredExpenses);
 
   // Separar transações parceladas e não parceladas
   const nonParcelledExpenses = filteredExpenses.filter(
@@ -128,7 +128,7 @@ export const getDashboard = async (month: string, year: string) => {
     expensesTotal += Number(transaction.amount);
   });
 
-  console.log("Total de despesas no mês de referência:", expensesTotal);
+  //console.log("Total de despesas no mês de referência:", expensesTotal);
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;

@@ -74,7 +74,7 @@ const LastTransactions = ({
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {transaction.paymentMethod === "CREDIT_CARD"
-                    ? `parc. (${differenceInMonths(new Date(`${year}-${month}-30`), startOfMonth(transaction.date)) + 1} / ${transaction.installments})`
+                    ? `parc. (${differenceInMonths(new Date(`${year}-${month}-28`), startOfMonth(transaction.date)) + 1} / ${transaction.installments})`
                     : ""}
                 </p>
               </div>

@@ -281,7 +281,7 @@ export const getDashboard = async (month: string, year: string) => {
       userId,
     },
     orderBy: { date: "desc" },
-    take: 15,
+    take: 20,
   });
 
   //console.log("transações sem filtro:", lastTransactions); // Log para verificar o resultado da consulta

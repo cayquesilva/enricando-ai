@@ -93,16 +93,16 @@ export const getDashboard = async (month: string, year: string) => {
   });
 
   console.log("despesas filtradas: ", filteredExpenses);
-
+  console.log("ReferenceDate : ", referenceDate);
+  console.log("year: ", referenceDate.getFullYear());
+  console.log("month: ", referenceDate.getMonth());
   // Mapear parcelas individuais para cada transação, incluindo as transações inteiras do mês de referência
   const distributedExpenses = filteredExpenses.flatMap((transaction) => {
     const installmentAmount =
       Number(transaction.amount) / transaction.installments; // Divide o valor total pelo número de parcelas
 
     // Gerar as parcelas para a transação
-    console.log("ReferenceDate : ", referenceDate);
-    console.log("year: ", referenceDate.getFullYear());
-    console.log("month: ", referenceDate.getMonth());
+
     return Array.from({ length: transaction.installments }, (_, index) => {
       const installmentDate = addMonths(transaction.date, index); // Data da parcela
       console.log("installmentDate: ", installmentDate);

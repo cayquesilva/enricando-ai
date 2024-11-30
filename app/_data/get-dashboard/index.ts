@@ -111,7 +111,7 @@ export const getDashboard = async (month: string, year: string) => {
 
       const isInstallmentInReferenceMonth =
         installmentDate.getFullYear() === referenceDate.getFullYear() &&
-        installmentDate.getMonth() === referenceDate.getMonth() + 1;
+        installmentDate.getMonth() + 1 === referenceDate.getMonth() + 1;
 
       // Retorna somente a parcela se ela for do mês de referência, caso contrário, não inclui
       return isInstallmentInReferenceMonth

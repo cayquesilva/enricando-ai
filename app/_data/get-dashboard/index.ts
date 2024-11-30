@@ -95,7 +95,7 @@ export const getDashboard = async (month: string, year: string) => {
   console.log("despesas filtradas: ", filteredExpenses);
   console.log("ReferenceDate : ", referenceDate);
   console.log("year: ", referenceDate.getFullYear());
-  console.log("month: ", referenceDate.getMonth());
+  console.log("month: ", referenceDate.getMonth() + 1);
   // Mapear parcelas individuais para cada transação, incluindo as transações inteiras do mês de referência
   const distributedExpenses = filteredExpenses.flatMap((transaction) => {
     const installmentAmount =
@@ -111,7 +111,7 @@ export const getDashboard = async (month: string, year: string) => {
 
       const isInstallmentInReferenceMonth =
         installmentDate.getFullYear() === referenceDate.getFullYear() &&
-        installmentDate.getMonth() === referenceDate.getMonth();
+        installmentDate.getMonth() === referenceDate.getMonth() + 1;
 
       // Retorna somente a parcela se ela for do mês de referência, caso contrário, não inclui
       return isInstallmentInReferenceMonth

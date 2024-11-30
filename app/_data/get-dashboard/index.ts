@@ -18,8 +18,8 @@ export const getDashboard = async (month: string, year: string) => {
 
   // Defina o intervalo para o mês atual
   //remover addmonths e subdays para usar em produção
-  const currentMonthStart = addMonths(startOfMonth(referenceDate), 1);
-  const currentMonthEnd = subDays(addMonths(endOfMonth(referenceDate), 1), 1);
+  const currentMonthStart = startOfMonth(referenceDate);
+  const currentMonthEnd = endOfMonth(referenceDate);
 
   console.log("inicio do mes: ", currentMonthStart);
   console.log("fim do mes: ", currentMonthEnd);
@@ -75,7 +75,7 @@ export const getDashboard = async (month: string, year: string) => {
       // Para transações parceladas, verificamos cada parcela individualmente
       for (let i = 0; i < expense.installments; i++) {
         const installmentMonth = addMonths(expense.date, i); // Mês da parcela
-        //console.log("mes da parcela: ", installmentMonth);
+        console.log("mes da parcela: ", installmentMonth);
         if (
           installmentMonth >= currentMonthStart &&
           installmentMonth <= currentMonthEnd
@@ -92,7 +92,7 @@ export const getDashboard = async (month: string, year: string) => {
     return false; // Se não houver parcelas no mês de referência ou não for no mês de referência
   });
 
-  //console.log("despesas filtradas: ", filteredExpenses);
+  console.log("despesas filtradas: ", filteredExpenses);
 
   // Mapear parcelas individuais para cada transação, incluindo as transações inteiras do mês de referência
   const distributedExpenses = filteredExpenses.flatMap((transaction) => {
@@ -113,14 +113,14 @@ export const getDashboard = async (month: string, year: string) => {
     }).filter((installment) => installment !== null); // Filtra as parcelas nulas (de meses anteriores)
   });
 
-  //console.log('despesas distribbuidas: ',distributedExpenses)
+  console.log("despesas distribbuidas: ", distributedExpenses);
   // Somar as despesas do mês de referência
   let expensesTotal = distributedExpenses.reduce(
     (total, installment) => total + installment.amount,
     0,
   );
 
-  //console.log('despesas totais divididas: ',expensesTotal)
+  console.log("despesas totais divididas: ", expensesTotal);
 
   // Agora, adicione as transações não parceladas do mês atual
   const nonParcelledExpenses = filteredExpenses.filter(
@@ -131,10 +131,12 @@ export const getDashboard = async (month: string, year: string) => {
     expensesTotal += Number(transaction.amount); // Adicione o valor total da transação não parcelada
   });
 
-  //console.log(
-  // "Despesas do mês de referência (com parcelas e transações completas): ",
-  // expensesTotal,
-  //);
+  console.log(
+    "Despesas do mês de referência (com parcelas e transações completas): ",
+    expensesTotal,
+  );
+
+  console.log("Transações do mês de referência: ", nonParcelledExpenses);
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;

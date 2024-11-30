@@ -5,9 +5,12 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import OpenAI from "openai";
 import { GenerateAiReportSchema, generateAiReportSchema } from "./schema";
 
-export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
+export const generateAiReport = async ({
+  month,
+  year,
+}: GenerateAiReportSchema) => {
   //valida se mês é válido
-  generateAiReportSchema.parse({ month });
+  generateAiReportSchema.parse({ month, year });
 
   //verifica se está logado
   const { userId } = await auth();
@@ -31,8 +34,8 @@ export const generateAiReport = async ({ month }: GenerateAiReportSchema) => {
   const transactions = await db.transaction.findMany({
     where: {
       date: {
-        gte: new Date(`2024-${month}-01`),
-        lt: new Date(`2024-${month}-31`),
+        gte: new Date(`${year}-${month}-01`),
+        lt: new Date(`${year}-${month}-31`),
       },
       userId,
     },

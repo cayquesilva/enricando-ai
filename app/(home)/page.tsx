@@ -9,14 +9,16 @@ import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
 import LastTransactions from "./_components/last-transactions";
 import AiReportButton from "./_components/ai-report-button";
+import YearSelect from "./_components/year-select";
 
 interface HomeProps {
   searchParams: {
     month: string;
+    year: string;
   };
 }
 
-const Home = async ({ searchParams: { month } }: HomeProps) => {
+const Home = async ({ searchParams: { month, year } }: HomeProps) => {
   //contorle de rota com o auth. só abre se tiver logado.
   const { userId } = await auth();
 
@@ -25,16 +27,19 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
     redirect("/login");
   }
 
-  //verificando se o mês foi informado e se é válido no formato 01 02 03 etc... "MM"
+  //verificando se o mês e ano foi informado e se é válido no formato 01 02 03 etc... "MM" ou 2024 2025 "YYYY"
   const monthIsInvalid = !month || !isMatch(month, "MM");
+  const yearIsInvalid = !year || !isMatch(year, "yyyy");
 
   //caso nao seja valido, redireciona para o mês atual.
-  if (monthIsInvalid) {
-    redirect(`?month=${new Date().getMonth() + 1}`);
+  if (monthIsInvalid && yearIsInvalid) {
+    redirect(
+      `?month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`,
+    );
   }
 
   //pega os dados por meio de arquivo separado, para nao passar dados sensiveis por client components
-  const dashboard = await getDashboard(month);
+  const dashboard = await getDashboard(month, year);
 
   //pegar o user do clerk
   const user = await clerkClient().users.getUser(userId);
@@ -48,11 +53,13 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
           <div className="mb-2 flex gap-6 md:mb-0">
             <AiReportButton
               month={month}
+              year={year}
               hasPremiumPlan={
                 user.publicMetadata.subscriptionPlan === "premium"
               }
             />
             <TimeSelect />
+            <YearSelect />
           </div>
         </div>
         <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-[2fr,1fr] lg:overflow-hidden">
@@ -68,6 +75,7 @@ const Home = async ({ searchParams: { month } }: HomeProps) => {
           <LastTransactions
             lastTransactions={dashboard.lastTransactions}
             month={month}
+            year={year}
           />
         </div>
       </div>

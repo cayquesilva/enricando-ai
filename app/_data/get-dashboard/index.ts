@@ -143,7 +143,7 @@ export const getDashboard = async (month: string, year: string) => {
     expensesTotal,
   );
 
-  console.log("Transações do mês de referência: ", nonParcelledExpenses);
+  console.log("Transações do mês de referência.: ", nonParcelledExpenses);
 
   //salvando o saldo
   const balance = depositsTotal - investmentsTotal - expensesTotal;

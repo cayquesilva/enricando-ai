@@ -1,47 +1,58 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { requireAuth } from "@/app/_lib/auth";
+import { dateParamSchema } from "@/app/_lib/validations";
+import { ERROR_MESSAGES, SUBSCRIPTION_PLANS } from "@/app/_lib/constants";
 import OpenAI from "openai";
-import { GenerateAiReportSchema, generateAiReportSchema } from "./schema";
 
-export const generateAiReport = async ({
-  month,
-  year,
-}: GenerateAiReportSchema) => {
-  //valida se mês é válido
-  generateAiReportSchema.parse({ month, year });
+type GenerateAiReportParams = {
+  month: string;
+  year: string;
+};
 
-  //verifica se está logado
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Não autorizado.");
-  }
+export const generateAiReport = async (params: GenerateAiReportParams) => {
+  // Validação dos parâmetros
+  const { month, year } = dateParamSchema.parse(params);
+  
+  // Autenticação
+  const userId = await requireAuth();
 
-  //verifica se tem plano premium no clerk
+  // Verificar plano premium
   const user = await clerkClient().users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === "premium";
+  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
+  
   if (!hasPremiumPlan) {
-    throw new Error("Você precisa de um Plano Premium");
+    throw new Error(ERROR_MESSAGES.PREMIUM_REQUIRED);
   }
 
-  //cria instancia da opeai
+  // Verificar variáveis de ambiente
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Chave da OpenAI não configurada");
+  }
+
+  // Criar instância da OpenAI
   const openAi = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  //pega as transações do mÊs recebido
+  // Buscar transações do mês
   const transactions = await db.transaction.findMany({
     where: {
       date: {
         gte: new Date(`${year}-${month}-01`),
-        lt: new Date(`${year}-${month}-31`),
+        lt: new Date(`${year}-${String(Number(month) + 1).padStart(2, '0')}-01`),
       },
       userId,
     },
   });
 
-  //manda as transações pra o ChatGPT e pede pra que ele gere um relatório
+  if (transactions.length === 0) {
+    return "Não há transações suficientes para gerar um relatório neste período.";
+  }
+
+  // Preparar dados para a IA
   const content = `Gere um relatório com insights sobre as minhas finanças,
      com dicas e orientações de como melhorar minha vida financeira.
       As transações estão divididas por ponto e vírgula. A estrutura de cada uma é 
@@ -49,18 +60,18 @@ export const generateAiReport = async ({
       ${transactions
         .map(
           (transaction) =>
-            `${transaction.date.toLocaleDateString("pt-BR")}-R$${transaction.amount}-${transaction.type}-${transaction.category}`,
+            `${transaction.date.toLocaleDateString("pt-BR")}-R$${Number(transaction.amount).toFixed(2)}-${transaction.type}-${transaction.category}`,
         )
         .join(";")}`;
 
-  //configurando modelo de IA, role system vai moldar a persona, role user é o usuario mesmo...
+  // Gerar relatório com IA
   const completion = await openAi.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
         content:
-          "Você é um especialista em gestão e organização de finanças pessoais. Você ajuda as pessoas a organizarem melhor as suas finanças de forma simples e possível.",
+          "Você é um especialista em gestão e organização de finanças pessoais. Você ajuda as pessoas a organizarem melhor as suas finanças de forma simples e prática. Forneça insights específicos, dicas acionáveis e recomendações personalizadas baseadas nos dados fornecidos.",
       },
       {
         role: "user",
@@ -69,7 +80,11 @@ export const generateAiReport = async ({
     ],
   });
 
-  //pegar a resposta do Chatgpt e mandar pro usuario
-
-  return completion.choices[0].message.content;
+  const report = completion.choices[0].message.content;
+  
+  if (!report) {
+    throw new Error("Não foi possível gerar o relatório");
+  }
+  
+  return report;
 };

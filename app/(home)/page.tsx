@@ -1,9 +1,11 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { clerkClient } from "@clerk/nextjs/server";
+import { requireAuth } from "@/app/_lib/auth";
+import { SUBSCRIPTION_PLANS } from "@/app/_lib/constants";
 import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
 import TimeSelect from "./_components/time-select";
 import { isMatch } from "date-fns";
+import { redirect } from "next/navigation";
 import TransactionsPieChart from "./_components/transactions-pie-chart";
 import { getDashboard } from "../_data/get-dashboard";
 import ExpensesPerCategory from "./_components/expenses-per-category";
@@ -13,36 +15,32 @@ import YearSelect from "./_components/year-select";
 
 interface HomeProps {
   searchParams: {
-    month: string;
-    year: string;
+    month?: string;
+    year?: string;
   };
 }
 
 const Home = async ({ searchParams: { month, year } }: HomeProps) => {
-  //contorle de rota com o auth. só abre se tiver logado.
-  const { userId } = await auth();
+  // Autenticação obrigatória
+  const userId = await requireAuth();
 
-  //caso não esteja logado, redireciona pra login
-  if (!userId) {
-    redirect("/login");
-  }
-
-  //verificando se o mês e ano foi informado e se é válido no formato 01 02 03 etc... "MM" ou 2024 2025 "YYYY"
+  // Validação e redirecionamento para data atual se inválida
   const monthIsInvalid = !month || !isMatch(month, "MM");
   const yearIsInvalid = !year || !isMatch(year, "yyyy");
 
-  //caso nao seja valido, redireciona para o mês atual.
-  if (monthIsInvalid && yearIsInvalid) {
+  if (monthIsInvalid || yearIsInvalid) {
+    const currentDate = new Date();
     redirect(
-      `?month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`,
+      `?month=${String(currentDate.getMonth() + 1).padStart(2, '0')}&year=${currentDate.getFullYear()}`,
     );
   }
 
-  //pega os dados por meio de arquivo separado, para nao passar dados sensiveis por client components
-  const dashboard = await getDashboard(month, year);
+  // Buscar dados do dashboard
+  const dashboard = await getDashboard(month!, year!);
 
-  //pegar o user do clerk
+  // Verificar plano do usuário
   const user = await clerkClient().users.getUser(userId);
+  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
 
   return (
     <>
@@ -52,11 +50,9 @@ const Home = async ({ searchParams: { month, year } }: HomeProps) => {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="mb-2 flex gap-6 md:mb-0">
             <AiReportButton
-              month={month}
-              year={year}
-              hasPremiumPlan={
-                user.publicMetadata.subscriptionPlan === "premium"
-              }
+              month={month!}
+              year={year!}
+              hasPremiumPlan={hasPremiumPlan}
             />
             <TimeSelect />
             <YearSelect />
@@ -74,8 +70,8 @@ const Home = async ({ searchParams: { month, year } }: HomeProps) => {
           </div>
           <LastTransactions
             lastTransactions={dashboard.lastTransactions}
-            month={month}
-            year={year}
+            month={month!}
+            year={year!}
           />
         </div>
       </div>

@@ -2,15 +2,17 @@ import Image from "next/image";
 import { Button } from "../_components/ui/button";
 import { LogInIcon } from "lucide-react";
 import { SignInButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthenticatedUser } from "../_lib/auth";
 import { redirect } from "next/navigation";
 import LogoIcon from "../_components/logo";
 
 const LoginPage = async () => {
-  const { userId } = await auth();
+  const userId = await getAuthenticatedUser();
+  
   if (userId) {
     redirect("/");
   }
+  
   return (
     <div className="h-full sm:grid sm:grid-cols-2">
       {/* ESQUERDA */}

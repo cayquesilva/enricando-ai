@@ -1,6 +1,7 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { requireAuth } from "../_lib/auth";
+import { SUBSCRIPTION_PLANS } from "../_lib/constants";
 import Navbar from "../_components/navbar";
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "../_components/ui/card";
 import { CheckIcon, XIcon } from "lucide-react";
 import AquirePlanButton from "./_components/aquire-plan-button";
@@ -8,18 +9,14 @@ import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "../_data/get-current-month-transactions";
 
 const SubscriptionsPage = async () => {
-  //contorle de rota com o auth. só abre se tiver logado.
-  const { userId } = await auth();
+  // Autenticação obrigatória
+  const userId = await requireAuth();
 
-  //caso não esteja logado, redireciona pra login
-  if (!userId) {
-    redirect("/login");
-  }
-
+  // Buscar dados do usuário
   const user = await clerkClient().users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan == "premium";
+  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
 
-  //chama função para contabilizar transações
+  // Contar transações do mês atual
   const currentMonthTransactions = await getCurrentMonthTransactions();
 
   return (

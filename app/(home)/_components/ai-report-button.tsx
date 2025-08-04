@@ -16,6 +16,7 @@ import { generateAiReport } from "../_actions/generate-ai-reports";
 import { useState } from "react";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
 import Markdown from "react-markdown";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface AiReportButtonProps {
@@ -29,20 +30,22 @@ const AiReportButton = ({
   hasPremiumPlan,
   year,
 }: AiReportButtonProps) => {
-  //salva as respostas do chatgpt
   const [report, setReport] = useState<string | null>();
-
-  //salva o estado do "loading" enquanto carrega resposta do chatgpt
   const [reportIsLoading, setReportIsLoading] = useState(false);
 
-  //chama a função da openAI que está como server component
   const handleGenerateReportClick = async () => {
     try {
       setReportIsLoading(true);
       const aiReport = await generateAiReport({ month, year });
       setReport(aiReport);
+      toast.success("Relatório gerado com sucesso!");
     } catch (error) {
       console.error(error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Erro ao gerar relatório. Tente novamente."
+      );
     } finally {
       setReportIsLoading(false);
     }

@@ -1,7 +1,4 @@
-import { z } from "zod";
-
-export const deleteTransactionSchema = z.object({
-  transactionId: z.string().uuid(),
-});
-
-export type DeleteTransactionSchema = z.infer<typeof deleteTransactionSchema>;
+// Este arquivo foi movido para app/_lib/validations.ts
+// Mantido para compatibilidade
+export { deleteTransactionSchema } from "@/app/_lib/validations";
+export type DeleteTransactionSchema = { transactionId: string };

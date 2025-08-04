@@ -1,12 +1,12 @@
 import { db } from "@/app/_lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthenticatedUser } from "@/app/_lib/auth";
 import { endOfMonth, startOfMonth } from "date-fns";
 
-//contando quantas transactions tem no mês atual
 export const getCurrentMonthTransactions = async () => {
-  const { userId } = await auth();
+  const userId = await getAuthenticatedUser();
+  
   if (!userId) {
-    throw new Error("Não autorizado");
+    return 0;
   }
 
   return db.transaction.count({
@@ -14,7 +14,7 @@ export const getCurrentMonthTransactions = async () => {
       userId,
       createdAt: {
         gte: startOfMonth(new Date()),
-        lt: endOfMonth(new Date()),
+        lte: endOfMonth(new Date()),
       },
     },
   });

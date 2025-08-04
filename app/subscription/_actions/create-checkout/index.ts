@@ -1,17 +1,21 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { requireAuth } from "@/app/_lib/auth";
 import Stripe from "stripe";
 
-//caso tenha mais de um plano, passar como parametro o productId
 export const createStripeCheckout = async () => {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("Não autorizado.");
-  }
+  const userId = await requireAuth();
 
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("Stripe Key não encontrada.");
+  }
+
+  if (!process.env.STRIPE_PREMIUM_PLAN_PRICE_ID) {
+    throw new Error("Price ID do plano premium não configurado.");
+  }
+
+  if (!process.env.NEXT_PUBLIC_APP_URL) {
+    throw new Error("URL da aplicação não configurada.");
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {

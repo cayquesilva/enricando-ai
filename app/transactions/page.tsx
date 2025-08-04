@@ -3,21 +3,15 @@ import { DataTable } from "../_components/ui/data-table";
 import { transactionColumns } from "./_columns";
 import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { requireAuth } from "../_lib/auth";
 import { ScrollArea } from "../_components/ui/scroll-area";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 
 const TransactionsPage = async () => {
-  //contorle de rota com o auth. só abre se tiver logado.
-  const { userId } = await auth();
+  // Autenticação obrigatória
+  const userId = await requireAuth();
 
-  //caso não esteja logado, redireciona pra login
-  if (!userId) {
-    redirect("/login");
-  }
-
-  //acessar as transações, pois tudo é server component com o uso do approuter do next
+  // Buscar transações do usuário
   const transactions = await db.transaction.findMany({
     where: {
       userId,
@@ -27,6 +21,7 @@ const TransactionsPage = async () => {
     },
   });
 
+  // Verificar se pode adicionar transações
   const userCanAddTransaction = await canUserAddTransaction();
 
   return (

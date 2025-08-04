@@ -1,21 +1,24 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { getAuthenticatedUser } from "@/app/_lib/auth";
+import { TRANSACTION_LIMITS, SUBSCRIPTION_PLANS } from "@/app/_lib/constants";
 import { getCurrentMonthTransactions } from "../get-current-month-transactions/index";
 
 export const canUserAddTransaction = async () => {
-  const { userId } = await auth();
+  const userId = await getAuthenticatedUser();
+  
   if (!userId) {
-    throw new Error("Não autorizado");
+    return false;
   }
 
   const user = await clerkClient().users.getUser(userId);
-  if (user.publicMetadata.subscriptionPlan === "premium") {
+  
+  // Usuários premium têm transações ilimitadas
+  if (user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM) {
     return true;
   }
 
+  // Usuários gratuitos têm limite mensal
   const currentMonthTransactions = await getCurrentMonthTransactions();
-
-  if (currentMonthTransactions >= 10) {
-    return false;
-  }
-  return true;
+  
+  return currentMonthTransactions < TRANSACTION_LIMITS.FREE_PLAN_MONTHLY_LIMIT;
 };

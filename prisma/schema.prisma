@@ -13,6 +13,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  isPremium   Boolean  @default(false)
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  transactions Transaction[]
+  
+  @@map("users")
+}
+
 model Transaction {
   id            String                   @id @default(uuid())
   name          String
@@ -22,9 +37,13 @@ model Transaction {
   paymentMethod TransactionPaymentMethod
   date          DateTime
   createdAt     DateTime                 @default(now())
-  udatedAt      DateTime                 @updatedAt
-  userId        String
-  installments  Int @default(1)
+  updatedAt     DateTime                 @updatedAt
+  installments  Int                      @default(1)
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("transactions")
 }
 
 enum TransactionType {

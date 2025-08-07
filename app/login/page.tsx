@@ -1,22 +1,19 @@
 import Image from "next/image";
-import { Button } from "../_components/ui/button";
-import { LogInIcon } from "lucide-react";
-import { SignInButton } from "@clerk/nextjs";
 import { getAuthenticatedUser } from "../_lib/auth";
 import { redirect } from "next/navigation";
 import LogoIcon from "../_components/logo";
+import LoginForm from "./_components/login-form";
 
 const LoginPage = async () => {
-  const userId = await getAuthenticatedUser();
+  const user = await getAuthenticatedUser();
   
-  if (userId) {
+  if (user) {
     redirect("/");
   }
   
   return (
     <div className="h-full sm:grid sm:grid-cols-2">
       {/* ESQUERDA */}
-
       <div className="relative z-[999] mx-auto flex h-full max-w-[550px] flex-col justify-center p-8">
         <LogoIcon />
 
@@ -26,16 +23,11 @@ const LoginPage = async () => {
           monitorar suas movimentações e oferecer insights personalizados,
           facilitando o controle do seu orçamento.
         </p>
-        <SignInButton>
-          <Button variant={"outline"}>
-            <LogInIcon className="mr-2" />
-            Fazer Login ou Criar Conta
-          </Button>
-        </SignInButton>
+        
+        <LoginForm />
       </div>
 
       {/* DIREITA */}
-
       <div className="z-[-999] opacity-10 sm:relative sm:h-full sm:w-full sm:opacity-100">
         <Image
           src="/login.png"

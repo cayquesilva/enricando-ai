@@ -1,6 +1,6 @@
 import AddTransactionButton from "@/app/_components/add-transaction-button";
 import { Card, CardContent, CardHeader } from "@/app/_components/ui/card";
-import { canUserAddTransaction } from "@/app/_data/can-user-add-transaction";
+import { AuthUser } from "@/app/_lib/auth";
 import { ReactNode } from "react";
 
 //sempre que for receber algo como prop, tem que criar interface
@@ -9,6 +9,7 @@ interface SummaryCardProps {
   title: string;
   amount: number;
   size?: "small" | "large";
+  user?: AuthUser;
 }
 
 const SummaryCard = async ({
@@ -16,8 +17,8 @@ const SummaryCard = async ({
   title,
   amount,
   size = "small",
+  user,
 }: SummaryCardProps) => {
-  const userCanAddTransaction = await canUserAddTransaction();
 
   return (
     <Card className={`${size === "large" ? "bg-white bg-opacity-5" : ""}`}>
@@ -41,7 +42,7 @@ const SummaryCard = async ({
 
         {/* Caso o componente seja do grande, vai renderizar o botão */}
         {size === "large" && (
-          <AddTransactionButton userCanAddTransaction={userCanAddTransaction} />
+          <AddTransactionButton user={user!} />
         )}
       </CardContent>
     </Card>

@@ -23,11 +23,11 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   const validatedData = transactionSchema.parse(params);
   
   // Autenticação
-  const userId = await requireAuth();
+  const user = await requireAuth();
   
   // Verificar se pode adicionar transação (apenas para novas transações)
   if (!params.id) {
-    const canAdd = await canUserAddTransaction();
+    const canAdd = await canUserAddTransaction(user.id, user.isPremium);
     if (!canAdd) {
       throw new Error(ERROR_MESSAGES.TRANSACTION_LIMIT_REACHED);
     }
@@ -38,7 +38,7 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
     const existingTransaction = await db.transaction.findFirst({
       where: {
         id: params.id,
-        userId,
+        userId: user.id,
       },
     });
     
@@ -48,8 +48,8 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   }
 
   await db.transaction.upsert({
-    update: { ...validatedData, userId },
-    create: { ...validatedData, userId },
+    update: { ...validatedData, userId: user.id },
+    create: { ...validatedData, userId: user.id },
     where: {
       id: params.id ?? "",
     },

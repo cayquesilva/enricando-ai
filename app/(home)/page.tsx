@@ -1,6 +1,4 @@
-import { clerkClient } from "@clerk/nextjs/server";
 import { requireAuth } from "@/app/_lib/auth";
-import { SUBSCRIPTION_PLANS } from "@/app/_lib/constants";
 import Navbar from "../_components/navbar";
 import SummaryCards from "./_components/summary-cards";
 import TimeSelect from "./_components/time-select";
@@ -22,7 +20,7 @@ interface HomeProps {
 
 const Home = async ({ searchParams: { month, year } }: HomeProps) => {
   // Autenticação obrigatória
-  const userId = await requireAuth();
+  const user = await requireAuth();
 
   // Validação e redirecionamento para data atual se inválida
   const monthIsInvalid = !month || !isMatch(month, "MM");
@@ -36,15 +34,13 @@ const Home = async ({ searchParams: { month, year } }: HomeProps) => {
   }
 
   // Buscar dados do dashboard
-  const dashboard = await getDashboard(month!, year!);
+  const dashboard = await getDashboard(month!, year!, user.id);
 
-  // Verificar plano do usuário
-  const user = await clerkClient().users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
+  const hasPremiumPlan = user.isPremium;
 
   return (
     <>
-      <Navbar />
+      <Navbar user={user} />
       <div className="flex h-full flex-col space-y-2 p-4 lg:overflow-hidden">
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
           <h1 className="text-2xl font-bold">Dashboard</h1>

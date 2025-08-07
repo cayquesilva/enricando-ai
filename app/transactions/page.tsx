@@ -9,12 +9,12 @@ import { canUserAddTransaction } from "../_data/can-user-add-transaction";
 
 const TransactionsPage = async () => {
   // Autenticação obrigatória
-  const userId = await requireAuth();
+  const user = await requireAuth();
 
   // Buscar transações do usuário
   const transactions = await db.transaction.findMany({
     where: {
-      userId,
+      userId: user.id,
     },
     orderBy: {
       date: "desc",
@@ -22,11 +22,11 @@ const TransactionsPage = async () => {
   });
 
   // Verificar se pode adicionar transações
-  const userCanAddTransaction = await canUserAddTransaction();
+  const userCanAddTransaction = await canUserAddTransaction(user.id);
 
   return (
     <>
-      <Navbar />
+      <Navbar user={user} />
       <div className="flex flex-col space-y-6 overflow-hidden p-6">
         <div className="flex w-full items-center justify-between">
           <h1 className="text-2xl font-bold">Transações</h1>

@@ -1,27 +1,22 @@
-import { clerkClient } from "@clerk/nextjs/server";
 import { requireAuth } from "../_lib/auth";
-import { SUBSCRIPTION_PLANS } from "../_lib/constants";
 import Navbar from "../_components/navbar";
 import { Card, CardContent, CardHeader } from "../_components/ui/card";
 import { CheckIcon, XIcon } from "lucide-react";
-import AquirePlanButton from "./_components/aquire-plan-button";
 import { Badge } from "../_components/ui/badge";
 import { getCurrentMonthTransactions } from "../_data/get-current-month-transactions";
 
 const SubscriptionsPage = async () => {
   // Autenticação obrigatória
-  const userId = await requireAuth();
+  const user = await requireAuth();
 
-  // Buscar dados do usuário
-  const user = await clerkClient().users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
+  const hasPremiumPlan = user.isPremium;
 
   // Contar transações do mês atual
-  const currentMonthTransactions = await getCurrentMonthTransactions();
+  const currentMonthTransactions = await getCurrentMonthTransactions(user.id);
 
   return (
     <>
-      <Navbar />
+      <Navbar user={user} />
       <div className="space-y-6 p-6">
         <h1 className="text-2xl font-bold">Assinatura</h1>
 
@@ -77,7 +72,9 @@ const SubscriptionsPage = async () => {
                 <CheckIcon className="text-primary" />
                 <p>Relatórios de IA</p>
               </div>
-              <AquirePlanButton />
+              <div className="text-center text-sm text-muted-foreground">
+                Entre em contato com o administrador para ativar o plano premium
+              </div>
             </CardContent>
           </Card>
         </div>

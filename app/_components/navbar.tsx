@@ -2,17 +2,25 @@
 
 import Link from "next/link";
 import LogoIcon from "./logo";
-import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, LogOutIcon, UserIcon, ShieldIcon } from "lucide-react";
 import { useMediaQuery } from "../hook/use-media-query";
+import { Button } from "./ui/button";
+import { logoutAction } from "../_actions/auth/logout";
+import { AuthUser } from "../_lib/auth";
 
-const Navbar = () => {
+interface NavbarProps {
+  user: AuthUser;
+}
+
+const Navbar = ({ user }: NavbarProps) => {
   const pathname = usePathname();
-
-  //usando hook permitindo uso de mediaquerys.
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const handleLogout = async () => {
+    await logoutAction();
+  };
 
   return (
     <nav className="flex justify-between border-b border-solid px-8 py-4">
@@ -50,8 +58,37 @@ const Navbar = () => {
             >
               Assinatura
             </Link>
+            {user.isAdmin && (
+              <Link
+                href="/admin"
+                className={
+                  pathname === "/admin"
+                    ? "font-bold text-primary"
+                    : "text-muted-foreground"
+                }
+              >
+                Admin
+              </Link>
+            )}
           </div>
-          <UserButton showName />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <UserIcon size={16} />
+              <span className="text-sm">{user.name}</span>
+              {user.isPremium && (
+                <span className="rounded-full bg-primary px-2 py-1 text-xs text-primary-foreground">
+                  Premium
+                </span>
+              )}
+              {user.isAdmin && (
+                <ShieldIcon size={16} className="text-yellow-500" />
+              )}
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOutIcon size={16} />
+              Sair
+            </Button>
+          </div>
         </>
       ) : (
         <>
@@ -62,7 +99,18 @@ const Navbar = () => {
                 <MenuIcon size={32} />
               </DrawerTrigger>
               <DrawerContent className="flex flex-col items-center gap-12 pb-12">
-                <UserButton showName />
+                <div className="flex items-center gap-2">
+                  <UserIcon size={16} />
+                  <span className="text-sm">{user.name}</span>
+                  {user.isPremium && (
+                    <span className="rounded-full bg-primary px-2 py-1 text-xs text-primary-foreground">
+                      Premium
+                    </span>
+                  )}
+                  {user.isAdmin && (
+                    <ShieldIcon size={16} className="text-yellow-500" />
+                  )}
+                </div>
                 <Link
                   href="/"
                   className={
@@ -93,6 +141,22 @@ const Navbar = () => {
                 >
                   Assinatura
                 </Link>
+                {user.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={
+                      pathname === "/admin"
+                        ? "border-b border-primary font-bold text-primary"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    Admin
+                  </Link>
+                )}
+                <Button variant="ghost" onClick={handleLogout}>
+                  <LogOutIcon size={16} />
+                  Sair
+                </Button>
               </DrawerContent>
             </Drawer>
           </div>

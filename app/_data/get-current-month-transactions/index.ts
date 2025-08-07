@@ -1,14 +1,7 @@
 import { db } from "@/app/_lib/prisma";
-import { getAuthenticatedUser } from "@/app/_lib/auth";
 import { endOfMonth, startOfMonth } from "date-fns";
 
-export const getCurrentMonthTransactions = async () => {
-  const userId = await getAuthenticatedUser();
-  
-  if (!userId) {
-    return 0;
-  }
-
+export const getCurrentMonthTransactions = async (userId: string) => {
   return db.transaction.count({
     where: {
       userId,

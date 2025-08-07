@@ -11,13 +11,13 @@ export const deleteTransaction = async (params: { transactionId: string }) => {
   const { transactionId } = deleteTransactionSchema.parse(params);
   
   // Autenticação
-  const userId = await requireAuth();
+  const user = await requireAuth();
   
   // Verificar se a transação existe e pertence ao usuário
   const transaction = await db.transaction.findFirst({
     where: {
       id: transactionId,
-      userId,
+      userId: user.id,
     },
   });
   
@@ -28,7 +28,7 @@ export const deleteTransaction = async (params: { transactionId: string }) => {
   await db.transaction.delete({
     where: {
       id: transactionId,
-      userId, // Segurança adicional
+      userId: user.id, // Segurança adicional
     },
   });
 

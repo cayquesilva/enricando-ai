@@ -1,10 +1,9 @@
 "use server";
 
 import { db } from "@/app/_lib/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
 import { requireAuth } from "@/app/_lib/auth";
 import { dateParamSchema } from "@/app/_lib/validations";
-import { ERROR_MESSAGES, SUBSCRIPTION_PLANS } from "@/app/_lib/constants";
+import { ERROR_MESSAGES } from "@/app/_lib/constants";
 import OpenAI from "openai";
 
 type GenerateAiReportParams = {
@@ -17,13 +16,10 @@ export const generateAiReport = async (params: GenerateAiReportParams) => {
   const { month, year } = dateParamSchema.parse(params);
   
   // Autenticação
-  const userId = await requireAuth();
+  const user = await requireAuth();
 
   // Verificar plano premium
-  const user = await clerkClient().users.getUser(userId);
-  const hasPremiumPlan = user.publicMetadata.subscriptionPlan === SUBSCRIPTION_PLANS.PREMIUM;
-  
-  if (!hasPremiumPlan) {
+  if (!user.isPremium) {
     throw new Error(ERROR_MESSAGES.PREMIUM_REQUIRED);
   }
 
@@ -44,7 +40,7 @@ export const generateAiReport = async (params: GenerateAiReportParams) => {
         gte: new Date(`${year}-${month}-01`),
         lt: new Date(`${year}-${String(Number(month) + 1).padStart(2, '0')}-01`),
       },
-      userId,
+      userId: user.id,
     },
   });
 

@@ -9,13 +9,10 @@ import {
   endOfMonth,
 } from "date-fns";
 
-export const getDashboard = async (month: string, year: string) => {
+export const getDashboard = async (month: string, year: string, userId: string) => {
   // Validação dos parâmetros
   const { month: validMonth, year: validYear } = dateParamSchema.parse({ month, year });
   
-  // Autenticação
-  const userId = await requireAuth();
-
   const referenceDate = new Date(`${validYear}-${validMonth}-01`);
 
   const currentMonthStart = startOfMonth(referenceDate);

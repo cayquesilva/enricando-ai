@@ -5,6 +5,7 @@ import {
   WalletIcon,
 } from "lucide-react";
 import SummaryCard from "./summary-card";
+import { AuthUser } from "@/app/_lib/auth";
 
 //cria interface para receber como props o month da URL
 interface SummaryCards {
@@ -12,6 +13,7 @@ interface SummaryCards {
   depositsTotal: number;
   investmentsTotal: number;
   expensesTotal: number;
+  user: AuthUser;
 }
 
 const SummaryCards = async ({
@@ -19,6 +21,7 @@ const SummaryCards = async ({
   investmentsTotal,
   depositsTotal,
   expensesTotal,
+  user,
 }: SummaryCards) => {
   return (
     <div className="space-y-4">
@@ -29,6 +32,7 @@ const SummaryCards = async ({
         title="Saldo"
         amount={balance}
         size="large"
+        user={user}
       />
 
       {/* outros cards */}

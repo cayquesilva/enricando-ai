@@ -1,8 +1,14 @@
 # Enrica.AI - Gestão Financeira Inteligente
 
-Uma plataforma completa de gestão financeira pessoal com inteligência artificial, desenvolvida com Next.js 14, TypeScript, Prisma e integração com Stripe para pagamentos.
+Uma plataforma completa de gestão financeira pessoal com inteligência artificial, desenvolvida com Next.js 14, TypeScript, Prisma e autenticação local.
 
 ## 🚀 Funcionalidades
+
+### 🔐 Sistema de Autenticação Local
+- **Registro e Login**: Sistema completo de autenticação com email/senha
+- **Segurança**: Senhas criptografadas com bcrypt e JWT para sessões
+- **Controle de Acesso**: Sistema de roles (usuário comum, premium, admin)
+- **Sessões Seguras**: Cookies httpOnly com expiração automática
 
 ### 📊 Dashboard Inteligente
 - **Visão geral financeira**: Saldo atual, receitas, despesas e investimentos
@@ -24,18 +30,20 @@ Uma plataforma completa de gestão financeira pessoal com inteligência artifici
 - **Insights financeiros**: Dicas e orientações para melhorar a vida financeira
 - **Análise de padrões**: Identificação de tendências de gastos
 - **Recomendações personalizadas**: Sugestões baseadas no perfil financeiro
+- **Exclusivo Premium**: Funcionalidade disponível apenas para usuários premium
 
-### 💳 Sistema de Assinaturas
+### 👑 Sistema de Planos
 - **Plano Gratuito**: Até 10 transações por mês
 - **Plano Premium**: Transações ilimitadas + relatórios de IA
-- **Integração Stripe**: Pagamentos seguros e recorrentes
-- **Webhooks**: Sincronização automática de status de pagamento
+- **Controle Manual**: Administradores podem ativar/desativar planos premium
+- **Sem Pagamentos**: Sistema simplificado sem integração de pagamento
 
-### 🔐 Autenticação e Segurança
-- **Clerk Authentication**: Sistema robusto de autenticação
-- **Proteção de rotas**: Middleware de segurança
-- **Validação de dados**: Sanitização e validação em todas as operações
-- **Autorização por usuário**: Isolamento completo de dados entre usuários
+### 🛡️ Painel Administrativo
+- **Gestão de Usuários**: Visualizar todos os usuários cadastrados
+- **Controle de Planos**: Ativar/desativar planos premium manualmente
+- **Privilégios Admin**: Conceder/remover privilégios administrativos
+- **Estatísticas**: Dashboard com métricas gerais do sistema
+- **Segurança**: Acesso restrito apenas a administradores
 
 ### 📱 Interface Responsiva
 - **Design moderno**: Interface limpa e intuitiva
@@ -61,11 +69,14 @@ Uma plataforma completa de gestão financeira pessoal com inteligência artifici
 - **PostgreSQL**: Banco de dados relacional robusto
 - **Server Actions**: Ações do servidor Next.js 14
 
+### Autenticação e Segurança
+- **JWT**: Tokens seguros para autenticação
+- **bcryptjs**: Criptografia de senhas
+- **Cookies httpOnly**: Armazenamento seguro de sessões
+- **Middleware**: Proteção de rotas automática
+
 ### Integrações
-- **Clerk**: Autenticação e gerenciamento de usuários
-- **Stripe**: Processamento de pagamentos e assinaturas
 - **OpenAI GPT-4**: Geração de relatórios inteligentes
-- **Webhooks**: Sincronização em tempo real
 
 ### Ferramentas de Desenvolvimento
 - **ESLint**: Linting de código
@@ -78,9 +89,7 @@ Uma plataforma completa de gestão financeira pessoal com inteligência artifici
 
 - Node.js 18+ 
 - PostgreSQL
-- Conta Clerk
-- Conta Stripe
-- Chave API OpenAI
+- Chave API OpenAI (para relatórios IA)
 
 ## 🚀 Instalação e Configuração
 
@@ -102,18 +111,8 @@ Crie um arquivo `.env` na raiz do projeto:
 # Database
 DATABASE_URL="postgresql://usuario:senha@localhost:5432/enrica-ai"
 
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/login
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PREMIUM_PLAN_PRICE_ID=price_...
-NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL=https://billing.stripe.com/p/login/...
+# JWT Secret (use uma chave forte em produção)
+JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
 
 # OpenAI
 OPENAI_API_KEY=sk-...
@@ -134,7 +133,16 @@ npx prisma migrate dev
 npx prisma generate
 ```
 
-### 5. Inicie o servidor de desenvolvimento
+### 5. Crie o primeiro usuário administrador
+```bash
+# Acesse o Prisma Studio
+npx prisma studio
+
+# Ou use o seed script (se disponível)
+npx prisma db seed
+```
+
+### 6. Inicie o servidor de desenvolvimento
 ```bash
 npm run dev
 ```
@@ -151,15 +159,16 @@ enrica-ai/
 │   │   ├── _components/          # Componentes específicos
 │   │   └── page.tsx              # Página do dashboard
 │   ├── _actions/                 # Actions globais
+│   │   └── auth/                 # Actions de autenticação
 │   ├── _components/              # Componentes reutilizáveis
 │   │   └── ui/                   # Componentes de interface
 │   ├── _constants/               # Constantes da aplicação
 │   ├── _data/                    # Camada de dados
 │   ├── _lib/                     # Utilitários e configurações
 │   ├── _utils/                   # Funções utilitárias
-│   ├── api/                      # API Routes
-│   │   └── webhooks/             # Webhooks do Stripe
-│   ├── login/                    # Página de login
+│   ├── admin/                    # Painel administrativo
+│   ├── api/                      # API Routes (se necessário)
+│   ├── login/                    # Página de login/registro
 │   ├── subscription/             # Páginas de assinatura
 │   ├── transactions/             # Páginas de transações
 │   ├── globals.css               # Estilos globais
@@ -168,6 +177,7 @@ enrica-ai/
 │   ├── migrations/               # Migrações do banco
 │   └── schema.prisma             # Schema do banco
 ├── public/                       # Arquivos estáticos
+├── middleware.ts                 # Middleware de autenticação
 └── components.json               # Configuração shadcn/ui
 ```
 
@@ -189,33 +199,110 @@ npx prisma generate  # Gera cliente Prisma
 npm run prepare      # Configura Husky
 ```
 
+## 👤 Primeiro Acesso
+
+### Criando o Primeiro Administrador
+
+1. **Registre-se normalmente** através da interface de login
+2. **Acesse o banco de dados** via Prisma Studio:
+   ```bash
+   npx prisma studio
+   ```
+3. **Edite seu usuário** na tabela `users`:
+   - Marque `isAdmin` como `true`
+   - Marque `isPremium` como `true` (opcional)
+4. **Faça logout e login novamente** para aplicar as mudanças
+
+### Gerenciando Usuários
+
+Como administrador, você pode:
+- Acessar `/admin` para ver o painel administrativo
+- Ativar/desativar planos premium de qualquer usuário
+- Conceder/remover privilégios administrativos
+- Visualizar estatísticas gerais do sistema
+
+## 🔒 Segurança
+
+### Autenticação
+- **Senhas criptografadas** com bcrypt (salt rounds: 12)
+- **JWT tokens** com expiração de 7 dias
+- **Cookies httpOnly** para prevenir XSS
+- **Middleware automático** para proteção de rotas
+
+### Autorização
+- **Isolamento de dados** por usuário
+- **Verificação de propriedade** em todas as operações
+- **Controle de acesso** baseado em roles
+- **Validação robusta** com Zod
+
+### Boas Práticas
+- **Sanitização de entrada** em todos os endpoints
+- **Rate limiting** (recomendado para produção)
+- **HTTPS obrigatório** em produção
+- **Logs de segurança** para auditoria
+
+## 📊 Funcionalidades por Plano
+
+### Plano Gratuito
+- ✅ Até 10 transações por mês
+- ✅ Dashboard básico
+- ✅ Gráficos e relatórios visuais
+- ✅ Categorização de transações
+- ❌ Relatórios de IA
+
+### Plano Premium
+- ✅ Transações ilimitadas
+- ✅ Todas as funcionalidades do plano gratuito
+- ✅ Relatórios de IA personalizados
+- ✅ Insights financeiros avançados
+- ✅ Análise preditiva
+
+### Administrador
+- ✅ Todas as funcionalidades premium
+- ✅ Painel administrativo
+- ✅ Gestão de usuários
+- ✅ Controle de planos
+- ✅ Estatísticas do sistema
+
 ## 🚀 Deploy
 
 ### Vercel (Recomendado)
 1. Conecte seu repositório GitHub à Vercel
 2. Configure as variáveis de ambiente
-3. Deploy automático a cada push
+3. Configure o banco PostgreSQL (Supabase, Railway, etc.)
+4. Deploy automático a cada push
 
 ### Outras plataformas
 - Railway
 - Heroku
 - DigitalOcean App Platform
 
-## 🔒 Segurança
+### Configurações de Produção
+```env
+# Use uma chave JWT forte
+JWT_SECRET="sua-chave-super-secreta-de-producao"
 
-- **Autenticação robusta**: Clerk com múltiplos provedores
-- **Autorização por usuário**: Isolamento completo de dados
-- **Validação de entrada**: Zod em todas as operações
-- **Sanitização**: Prevenção contra XSS e SQL injection
-- **HTTPS obrigatório**: Comunicação segura
-- **Webhooks seguros**: Verificação de assinatura Stripe
+# Configure HTTPS
+NEXT_PUBLIC_APP_URL=https://seu-dominio.com
 
-## 📊 Monitoramento
+# Configure banco de produção
+DATABASE_URL="postgresql://..."
+```
 
-- **Error Boundaries**: Captura de erros React
-- **Logging estruturado**: Console logs organizados
-- **Webhook monitoring**: Logs de eventos Stripe
-- **Performance**: Otimizações Next.js 14
+## 📈 Monitoramento
+
+### Logs de Sistema
+- **Autenticação**: Login/logout de usuários
+- **Transações**: Criação/edição/exclusão
+- **Erros**: Captura automática de exceções
+- **Performance**: Métricas de resposta
+
+### Métricas Importantes
+- Número total de usuários
+- Usuários ativos mensalmente
+- Transações por usuário
+- Uso de relatórios IA
+- Taxa de conversão para premium
 
 ## 🤝 Contribuição
 
@@ -229,22 +316,30 @@ npm run prepare      # Configura Husky
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## 📞 Suporte
-
-- **Email**: suporte@enrica-ai.com
-- **Discord**: [Servidor da comunidade](https://discord.gg/enrica-ai)
-- **Documentação**: [docs.enrica-ai.com](https://docs.enrica-ai.com)
-
 ## 🎯 Roadmap
 
+### Próximas Funcionalidades
+- [ ] **Sistema de notificações**: Alertas de gastos e lembretes
 - [ ] **Metas financeiras**: Sistema de objetivos e acompanhamento
 - [ ] **Categorias customizadas**: Criação de categorias personalizadas
 - [ ] **Exportação de dados**: PDF, Excel, CSV
-- [ ] **Notificações**: Alertas de gastos e lembretes
 - [ ] **API pública**: Endpoints para integrações
 - [ ] **App mobile**: React Native
 - [ ] **Múltiplas moedas**: Suporte internacional
 - [ ] **Análise preditiva**: IA para previsões financeiras
+
+### Melhorias Técnicas
+- [ ] **Rate limiting**: Proteção contra spam
+- [ ] **Cache Redis**: Otimização de performance
+- [ ] **Testes automatizados**: Cobertura completa
+- [ ] **CI/CD**: Pipeline automatizado
+- [ ] **Monitoring**: Observabilidade completa
+
+## 📞 Suporte
+
+- **Email**: suporte@enrica-ai.com
+- **GitHub Issues**: [Reportar problemas](https://github.com/seu-usuario/enrica-ai/issues)
+- **Documentação**: [Wiki do projeto](https://github.com/seu-usuario/enrica-ai/wiki)
 
 ---
 

@@ -22,6 +22,7 @@ interface GetColumnsProps {
   month: string;
   year: string;
   onEdit: (transaction: Transaction) => void;
+  onSuccess?: () => void;
 }
 
 // A função agora espera receber dados do tipo 'TransactionRow'.
@@ -29,6 +30,7 @@ export const getTransactionColumns = ({
   month,
   year,
   onEdit,
+  onSuccess,
 }: GetColumnsProps): ColumnDef<TransactionRow>[] => {
   const yearNum = parseInt(year);
   const monthIndex = parseInt(month) - 1;
@@ -177,6 +179,7 @@ export const getTransactionColumns = ({
               transactionId={transaction.id}
               month={month}
               year={year}
+              onSuccess={onSuccess}
             />
           </div>
         );

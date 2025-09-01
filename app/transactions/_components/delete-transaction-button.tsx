@@ -18,17 +18,20 @@ interface DeleteTransactionButtonProps {
   transactionId: string;
   month: string;
   year: string;
+  onSuccess?: () => void;
 }
 
 const DeleteTransactionButton = ({
   transactionId,
   month,
   year,
+  onSuccess,
 }: DeleteTransactionButtonProps) => {
   const handleConfirmDeleteClick = async () => {
     try {
       await deleteTransaction({ transactionId, month, year });
       toast.success("Transação deletada com sucesso.");
+      onSuccess?.();
     } catch (error) {
       console.error(error);
     }

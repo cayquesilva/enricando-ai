@@ -51,6 +51,7 @@ interface UpsertTransactionDialogProps {
   defaultValues?: Partial<FormSchema>;
   transactionId?: string;
   setIsOpen: (isOpen: boolean) => void;
+  onSuccess?: () => void;
 }
 
 const formSchema = z.object({
@@ -95,6 +96,7 @@ const UpsertTransactionDialog = ({
   defaultValues,
   transactionId,
   setIsOpen,
+  onSuccess,
 }: UpsertTransactionDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -201,6 +203,7 @@ const UpsertTransactionDialog = ({
           ? "Transação atualizada com sucesso."
           : "Transação adicionada com sucesso.",
       );
+      onSuccess?.();
     } catch (error) {
       console.error(error);
       toast.error(

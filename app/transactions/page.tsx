@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Transaction } from "@prisma/client";
 import { DataTable } from "../_components/ui/data-table";
 import { getTransactionColumns } from "./_columns";
@@ -50,19 +50,20 @@ const TransactionsPage = () => {
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setData(null);
-      const result = await getTransactionsPageData({
-        month,
-        year,
-        search,
-        category,
-      });
-      setData(result);
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setData(null);
+    const result = await getTransactionsPageData({
+      month,
+      year,
+      search,
+      category,
+    });
+    setData(result);
   }, [month, year, search, category]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -90,7 +91,13 @@ const TransactionsPage = () => {
     totalIncome,
     totalExpenses,
   } = data;
-  const columns = getTransactionColumns({ month, year, onEdit: handleEdit });
+
+  const columns = getTransactionColumns({
+    month,
+    year,
+    onEdit: handleEdit,
+    onSuccess: fetchData,
+  });
 
   return (
     // 1. O container principal agora ocupa a altura total do ecrã
@@ -175,6 +182,7 @@ const TransactionsPage = () => {
             : undefined
         }
         transactionId={selectedTransaction?.id}
+        onSuccess={fetchData}
       />
     </div>
   );

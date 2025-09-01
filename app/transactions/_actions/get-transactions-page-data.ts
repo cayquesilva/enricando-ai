@@ -3,7 +3,7 @@
 import { db } from "../../_lib/prisma";
 import { requireAuth } from "../../_lib/auth";
 import { canUserAddTransaction } from "../../_data/can-user-add-transaction";
-import { isMatch } from "date-fns";
+import { addMonths, isMatch } from "date-fns"; // Adicione 'addMonths'
 
 // Esta função busca todos os dados necessários para a página de transações.
 export const getTransactionsPageData = async ({
@@ -26,12 +26,11 @@ export const getTransactionsPageData = async ({
   const endDate = new Date(yearNum, monthIndex + 1, 1);
   endDate.setMilliseconds(endDate.getMilliseconds() - 1);
 
-  // Busca as transações filtradas pelo período
-  const transactions = await db.transaction.findMany({
+  // 1. Buscamos todas as transações que começaram ANTES do FIM do mês selecionado.
+  const potentialTransactions = await db.transaction.findMany({
     where: {
       userId: user.id,
       date: {
-        gte: startDate,
         lte: endDate,
       },
     },
@@ -40,7 +39,18 @@ export const getTransactionsPageData = async ({
     },
   });
 
-  // Verifica a permissão para adicionar transação no período
+  // 2. Filtramos em código para encontrar apenas as transações com parcelas ativas no mês.
+  const transactionsInMonth = potentialTransactions.filter((transaction) => {
+    for (let i = 0; i < transaction.installments; i++) {
+      const installmentDate = addMonths(transaction.date, i);
+      // Se qualquer uma das parcelas cair dentro do intervalo do mês, incluímos a transação.
+      if (installmentDate >= startDate && installmentDate <= endDate) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   const userCanAddTransaction = await canUserAddTransaction(
     user.id,
     user.isPremium,
@@ -48,9 +58,9 @@ export const getTransactionsPageData = async ({
     year,
   );
 
-  // Serializa (limpa) os dados antes de os enviar para o cliente
   const safeUser = JSON.parse(JSON.stringify(user));
-  const safeTransactions = JSON.parse(JSON.stringify(transactions));
+  // Retornamos a lista já filtrada corretamente.
+  const safeTransactions = JSON.parse(JSON.stringify(transactionsInMonth));
 
   return {
     user: safeUser,

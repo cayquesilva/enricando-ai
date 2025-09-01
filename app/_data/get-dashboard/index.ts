@@ -26,13 +26,10 @@ export const getDashboard = async (
   // Para obter o fim do mês, vamos para o início do próximo mês e subtraímos 1 milissegundo.
   const endDate = new Date(yearNum, monthIndex + 1, 1);
   endDate.setMilliseconds(endDate.getMilliseconds() - 1);
-  // --- FIM DA CORREÇÃO DE DATA ---
-
-  // A busca agora usa as datas corretas
-  const allTransactionsInPeriod = await db.transaction.findMany({
+  // 1. Buscamos todas as transações que começaram ANTES do FIM do mês selecionado.
+  const potentialTransactions = await db.transaction.findMany({
     where: {
       userId: user.id,
-      // A transação deve ter começado em ou antes do fim do mês
       date: { lte: endDate },
     },
   });
@@ -42,14 +39,17 @@ export const getDashboard = async (
   let expensesTotal = 0;
   const totalExpensePerCategory: TotalExpensePerCategory[] = [];
 
-  allTransactionsInPeriod.forEach((transaction) => {
+  // 2. Iteramos sobre as transações para calcular os totais das parcelas do mês.
+  potentialTransactions.forEach((transaction) => {
     const installmentAmount =
       Number(transaction.amount) / transaction.installments;
 
     for (let i = 0; i < transaction.installments; i++) {
       const installmentDate = addMonths(transaction.date, i);
 
+      // Se a parcela atual cair dentro do mês de referência...
       if (installmentDate >= startDate && installmentDate <= endDate) {
+        // ...processamos o valor dela...
         switch (transaction.type) {
           case TransactionType.DEPOSIT:
             depositsTotal += installmentAmount;
@@ -73,6 +73,8 @@ export const getDashboard = async (
             }
             break;
         }
+        // ...e saímos do loop, pois só queremos contar uma parcela por mês por transação.
+        break;
       }
     }
   });

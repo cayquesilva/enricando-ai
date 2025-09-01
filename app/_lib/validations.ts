@@ -18,13 +18,20 @@ export const dateParamSchema = z.object({
 
 export const transactionSchema = z.object({
   id: z.string().uuid().optional(),
-  name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome muito longo"),
   amount: z
     .number({
       required_error: "Valor é obrigatório",
     })
     .positive("Valor deve ser positivo")
-    .max(TRANSACTION_LIMITS.MAX_AMOUNT, `Valor máximo é R$ ${TRANSACTION_LIMITS.MAX_AMOUNT.toLocaleString("pt-BR")}`),
+    .max(
+      TRANSACTION_LIMITS.MAX_AMOUNT,
+      `Valor máximo é R$ ${TRANSACTION_LIMITS.MAX_AMOUNT.toLocaleString("pt-BR")}`,
+    ),
   type: z.nativeEnum(TransactionType, {
     required_error: "Tipo é obrigatório",
   }),
@@ -42,6 +49,7 @@ export const transactionSchema = z.object({
     .min(TRANSACTION_LIMITS.MIN_INSTALLMENTS, "Mínimo 1 parcela")
     .max(TRANSACTION_LIMITS.MAX_INSTALLMENTS, "Máximo 42 parcelas")
     .default(1),
+  isRecurring: z.boolean().default(false),
 });
 
 export const deleteTransactionSchema = z.object({

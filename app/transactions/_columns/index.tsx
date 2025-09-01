@@ -12,6 +12,7 @@ import { EditIcon, ArrowUpDown } from "lucide-react";
 import { differenceInCalendarMonths } from "date-fns";
 import { FormatCurrency } from "@/app/_utils/currency";
 import DeleteTransactionButton from "../_components/delete-transaction-button";
+import { Badge } from "@/app/_components/ui/badge";
 
 // 1. O tipo de dados para cada linha agora pode ser uma transação normal
 // ou o nosso objeto separador especial.
@@ -101,6 +102,11 @@ export const getTransactionColumns = ({
           return null;
         }
         const transaction = row.original;
+
+        if (transaction.isRecurring) {
+          return <Badge variant="outline">Recorrente</Badge>;
+        }
+
         if (transaction.installments > 1) {
           const currentInstallment =
             differenceInCalendarMonths(referenceDate, transaction.date) + 1;
@@ -167,7 +173,11 @@ export const getTransactionColumns = ({
             >
               <EditIcon size={14} />
             </Button>
-            <DeleteTransactionButton transactionId={transaction.id} />
+            <DeleteTransactionButton
+              transactionId={transaction.id}
+              month={month}
+              year={year}
+            />
           </div>
         );
       },

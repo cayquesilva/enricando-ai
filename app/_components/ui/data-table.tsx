@@ -14,11 +14,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./table";
+} from "@/app/_components/ui/table";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+}
+
+type SeparatorRow = { isSeparator?: boolean };
+
+function isSeparator<TData>(data: TData): data is TData & SeparatorRow {
+  return (data as SeparatorRow)?.isSeparator === true;
 }
 
 export function DataTable<TData, TValue>({
@@ -54,22 +60,39 @@ export function DataTable<TData, TValue>({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            table.getRowModel().rows.map((row) => {
+              // --- INÍCIO DA CORREÇÃO ---
+              // Fazemos uma verificação segura para ver se a propriedade 'isSeparator' existe e é verdadeira.
+              // Usamos 'as any' porque TData é genérico, mas esta verificação garante a segurança.
+              const isSeparatorRow = isSeparator(row.original);
+              // --- FIM DA CORREÇÃO ---
+
+              return (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  // Agora usamos a nossa variável segura para aplicar a classe.
+                  className={isSeparatorRow ? "bg-muted hover:bg-muted" : ""}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    // Adicionamos um 'colspan' à célula do separador para que ela ocupe a linha inteira.
+                    <TableCell
+                      key={cell.id}
+                      className={isSeparatorRow ? "text-center" : ""}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
+                Sem resultados.
               </TableCell>
             </TableRow>
           )}

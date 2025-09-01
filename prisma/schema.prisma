@@ -39,6 +39,11 @@ model Transaction {
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   installments  Int                      @default(1)
+
+  isRecurring   Boolean                  @default(false) // Para marcar se é uma despesa recorrente
+  endDate       DateTime?                // Data de fim para transações recorrentes ou parceladas
+
+
   
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

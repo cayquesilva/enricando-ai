@@ -31,6 +31,7 @@ export const getDashboard = async (
     where: {
       userId: user.id,
       date: { lte: endDate },
+      OR: [{ endDate: { gte: startDate } }, { endDate: null }],
     },
   });
 
@@ -44,21 +45,26 @@ export const getDashboard = async (
     const installmentAmount =
       Number(transaction.amount) / transaction.installments;
 
-    for (let i = 0; i < transaction.installments; i++) {
-      const installmentDate = addMonths(transaction.date, i);
-
-      // Se a parcela atual cair dentro do mês de referência...
-      if (installmentDate >= startDate && installmentDate <= endDate) {
-        // ...processamos o valor dela...
-        switch (transaction.type) {
-          case TransactionType.DEPOSIT:
+    if (transaction.isRecurring) {
+      // Lógica para recorrentes
+      if (transaction.type === TransactionType.DEPOSIT) {
+        depositsTotal += installmentAmount;
+      } else if (transaction.type === TransactionType.EXPENSE) {
+        expensesTotal += installmentAmount;
+        // Adiciona à categoria (a sua lógica aqui pode variar)
+      } else if (transaction.type === TransactionType.INVESTMENT) {
+        investmentsTotal += installmentAmount;
+      }
+    } else {
+      // Lógica para parceladas
+      for (let i = 0; i < transaction.installments; i++) {
+        const installmentDate = addMonths(transaction.date, i);
+        if (installmentDate >= startDate && installmentDate <= endDate) {
+          if (transaction.type === TransactionType.DEPOSIT) {
             depositsTotal += installmentAmount;
-            break;
-          case TransactionType.INVESTMENT:
-            investmentsTotal += installmentAmount;
-            break;
-          case TransactionType.EXPENSE:
+          } else if (transaction.type === TransactionType.EXPENSE) {
             expensesTotal += installmentAmount;
+            // Adiciona à categoria
             const existingCategory = totalExpensePerCategory.find(
               (c) => c.category === transaction.category,
             );
@@ -71,10 +77,11 @@ export const getDashboard = async (
                 percentageOfTotal: 0,
               });
             }
-            break;
+          } else if (transaction.type === TransactionType.INVESTMENT) {
+            investmentsTotal += installmentAmount;
+          }
+          break;
         }
-        // ...e saímos do loop, pois só queremos contar uma parcela por mês por transação.
-        break;
       }
     }
   });
@@ -101,7 +108,9 @@ export const getDashboard = async (
   });
 
   const lastTransactions = await db.transaction.findMany({
-    where: { userId: user.id },
+    where: {
+      userId: user.id,
+    },
     orderBy: { date: "desc" },
     take: 15,
   });

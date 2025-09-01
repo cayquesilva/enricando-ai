@@ -44,6 +44,7 @@ import { DatePicker } from "./ui/date-picker";
 import { upsertTransaction } from "../_actions/add-transaction";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { Checkbox } from "./ui/checkbox";
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
@@ -81,7 +82,10 @@ const formSchema = z.object({
   installments: z
     .number()
     .min(1, "O número de parcelas deve ser no mínimo 1.")
-    .max(42, "O número de parcelas deve ser no máximo 42."),
+    .max(42, "O número de parcelas deve ser no máximo 42.")
+    .optional()
+    .default(1),
+  isRecurring: z.boolean().default(false),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -113,8 +117,11 @@ const UpsertTransactionDialog = ({
           paymentMethod: TransactionPaymentMethod.CASH,
           type: TransactionType.EXPENSE,
           installments: 1,
+          isRecurring: false,
         },
   });
+  const isRecurring = form.watch("isRecurring");
+
   const [selectedType, setSelectedType] = useState<TransactionType | undefined>(
     defaultValues?.type,
   );
@@ -143,6 +150,7 @@ const UpsertTransactionDialog = ({
         paymentMethod: TransactionPaymentMethod.CASH,
         date: new Date(),
         installments: 1,
+        isRecurring: false,
       });
       setSelectedType(TransactionType.EXPENSE);
       setSelectedPaymentMethod(TransactionPaymentMethod.CASH);
@@ -163,10 +171,13 @@ const UpsertTransactionDialog = ({
     form.setValue("paymentMethod", newMethod);
   };
 
+  const showRecurringField = selectedType === TransactionType.EXPENSE;
+
   // Transforma em true ou false o showInstallMents caso a escolha seja despesa e cartão de crédito.
   const showInstallmentsField =
     selectedType === TransactionType.EXPENSE &&
-    selectedPaymentMethod === TransactionPaymentMethod.CREDIT_CARD;
+    selectedPaymentMethod === TransactionPaymentMethod.CREDIT_CARD &&
+    !isRecurring;
 
   // Definir opções de categoria com base no tipo selecionado
   const filteredCategoryOptions =
@@ -176,12 +187,27 @@ const UpsertTransactionDialog = ({
 
   const onSubmit = async (data: FormSchema) => {
     try {
-      await upsertTransaction({ ...data, id: transactionId });
+      const finalData = {
+        ...data,
+        // Se a transação for recorrente, o número de parcelas é sempre 1.
+        // Se o campo de parcelas não estiver visível, também é 1.
+        installments:
+          isRecurring || !showInstallmentsField ? 1 : data.installments,
+      };
+      await upsertTransaction({ ...finalData, id: transactionId });
       setIsOpen(false);
-      toast.success("Transação adicionada com sucesso.");
-      form.reset();
+      toast.success(
+        transactionId
+          ? "Transação atualizada com sucesso."
+          : "Transação adicionada com sucesso.",
+      );
     } catch (error) {
       console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro ao salvar a transação.",
+      );
     }
   };
 
@@ -333,6 +359,29 @@ const UpsertTransactionDialog = ({
               )}
             />
 
+            {showRecurringField && (
+              <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Despesa Recorrente</FormLabel>
+                      <DialogDescription>
+                        Esta despesa repete-se todos os meses.
+                      </DialogDescription>
+                    </div>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
             {/* Campo de Parcelas Condicional */}
             {showInstallmentsField && (
               <FormField
@@ -344,10 +393,11 @@ const UpsertTransactionDialog = ({
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="Digite a quantidade de parcelas"
+                        placeholder="Digite a quantidade de Parcelas"
                         {...field}
-                        //onChange para transformar sempre em numero.
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value, 10) || 1)
+                        }
                       />
                     </FormControl>
                     <FormMessage />

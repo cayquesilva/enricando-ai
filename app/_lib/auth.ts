@@ -18,15 +18,15 @@ export const getAuthenticatedUser = async (): Promise<AuthUser | null> => {
     const cookieStore = cookies();
     const token = cookieStore.get("auth-token")?.value;
 
-    console.log("Auth Debug - Token recebido:", token);
+    //console.log("Auth Debug - Token recebido:", token);
 
     if (!token) {
-      console.log("Auth Debug - Nenhum token encontrado");
+      //console.log("Auth Debug - Nenhum token encontrado");
       return null;
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    console.log("Auth Debug - Token decodificado:", decoded);
+    //console.log("Auth Debug - Token decodificado:", decoded);
 
     const user = await db.user.findUnique({
       where: { id: decoded.userId },
@@ -39,7 +39,7 @@ export const getAuthenticatedUser = async (): Promise<AuthUser | null> => {
       },
     });
 
-    console.log("Auth Debug - Usuário encontrado:", user);
+    //console.log("Auth Debug - Usuário encontrado:", user);
 
     return user;
   } catch (error) {

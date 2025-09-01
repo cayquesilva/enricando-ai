@@ -4,12 +4,7 @@ import { db } from "../../_lib/prisma";
 import { requireAuth } from "../../_lib/auth";
 import { canUserAddTransaction } from "../../_data/can-user-add-transaction";
 import { addMonths, isMatch } from "date-fns";
-import {
-  Prisma,
-  TransactionType,
-  TransactionCategory,
-  Transaction,
-} from "@prisma/client";
+import { Prisma, TransactionType, TransactionCategory } from "@prisma/client";
 
 interface GetTransactionsDataProps {
   month: string;
@@ -36,9 +31,12 @@ export const getTransactionsPageData = async ({
   const endDate = new Date(yearNum, monthIndex + 1, 1);
   endDate.setMilliseconds(endDate.getMilliseconds() - 1);
 
+  // A query do Prisma agora é mais inteligente para apanhar transações recorrentes
   const where: Prisma.TransactionWhereInput = {
     userId: user.id,
-    date: { lte: endDate },
+    date: { lte: endDate }, // A transação deve ter começado ANTES do FIM do mês
+    // E deve terminar DEPOIS do INÍCIO do mês (se tiver uma data de fim)
+    OR: [{ endDate: { gte: startDate } }, { endDate: null }],
     AND: [
       search ? { name: { contains: search, mode: "insensitive" } } : {},
       category ? { category: { equals: category as TransactionCategory } } : {},
@@ -53,59 +51,36 @@ export const getTransactionsPageData = async ({
   let totalIncome = 0;
   let totalExpenses = 0;
 
-  // --- INÍCIO DA ALTERAÇÃO ---
-
-  // O tipo da nossa lista final agora pode incluir o objeto separador.
-  const finalTransactions: (Transaction & { isSeparator?: boolean })[] = [];
-  let separatorInserted = false;
-
-  potentialTransactions.forEach((transaction) => {
-    let hasInstallmentInMonth = false;
+  const transactionsInMonth = potentialTransactions.filter((transaction) => {
     const installmentAmount =
       Number(transaction.amount) / transaction.installments;
 
-    for (let i = 0; i < transaction.installments; i++) {
-      const installmentDate = addMonths(transaction.date, i);
-      if (installmentDate >= startDate && installmentDate <= endDate) {
-        hasInstallmentInMonth = true;
-        if (transaction.type === TransactionType.DEPOSIT) {
-          totalIncome += installmentAmount;
-        } else if (transaction.type === TransactionType.EXPENSE) {
-          totalExpenses += installmentAmount;
+    // --- LÓGICA DE FILTRO CORRIGIDA ---
+    if (transaction.isRecurring) {
+      // Se for recorrente, simplesmente verificamos se o período é válido.
+      // A query do Prisma já fez a maior parte do trabalho.
+      if (transaction.type === TransactionType.DEPOSIT) {
+        totalIncome += installmentAmount;
+      } else if (transaction.type === TransactionType.EXPENSE) {
+        totalExpenses += installmentAmount;
+      }
+      return true; // Inclui a transação na lista
+    } else {
+      // Se não for recorrente, usamos a lógica de parcelas
+      for (let i = 0; i < transaction.installments; i++) {
+        const installmentDate = addMonths(transaction.date, i);
+        if (installmentDate >= startDate && installmentDate <= endDate) {
+          if (transaction.type === TransactionType.DEPOSIT) {
+            totalIncome += installmentAmount;
+          } else if (transaction.type === TransactionType.EXPENSE) {
+            totalExpenses += installmentAmount;
+          }
+          return true; // Inclui a transação na lista
         }
-        break;
       }
     }
-
-    // Apenas processe as transações que têm parcelas no mês selecionado.
-    if (hasInstallmentInMonth) {
-      const transactionStartedInPreviousMonth = transaction.date < startDate;
-
-      // Se a transação começou num mês anterior E o separador ainda não foi inserido...
-      if (transactionStartedInPreviousMonth && !separatorInserted) {
-        // ...insere o nosso objeto separador especial na lista.
-        finalTransactions.push({
-          id: "separator", // ID único para o separador
-          isSeparator: true,
-          // Preenchemos o resto com dados falsos para satisfazer o tipo de dados.
-          name: "separator",
-          type: TransactionType.EXPENSE,
-          amount: new Prisma.Decimal(0),
-          category: "OTHER",
-          paymentMethod: "OTHER",
-          date: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          installments: 0,
-          userId: user.id,
-        });
-        separatorInserted = true; // Marcamos que o separador já foi inserido.
-      }
-      // Adicionamos a transação real à lista final.
-      finalTransactions.push(transaction);
-    }
+    return false; // Exclui se nenhuma condição for satisfeita
   });
-  // --- FIM DA ALTERAÇÃO ---
 
   const userCanAddTransaction = await canUserAddTransaction(
     user.id,
@@ -115,8 +90,7 @@ export const getTransactionsPageData = async ({
   );
 
   const safeUser = JSON.parse(JSON.stringify(user));
-  // Retornamos a nova lista que contém as transações e o separador.
-  const safeTransactions = JSON.parse(JSON.stringify(finalTransactions));
+  const safeTransactions = JSON.parse(JSON.stringify(transactionsInMonth));
 
   return {
     user: safeUser,

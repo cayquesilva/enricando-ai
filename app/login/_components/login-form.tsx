@@ -5,33 +5,59 @@ import { Input } from "@/app/_components/ui/input";
 import { Label } from "@/app/_components/ui/label";
 import { loginAction } from "@/app/_actions/auth/login";
 import { registerAction } from "@/app/_actions/auth/register";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { LogInIcon, UserPlusIcon } from "lucide-react";
+import { useFormState, useFormStatus } from "react-dom";
+
+// Componente interno para o botão de submit.
+// Ele usa o hook `useFormStatus` para saber quando o formulário está sendo enviado.
+const SubmitButton = ({ isLogin }: { isLogin: boolean }) => {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {isLogin ? (
+        <>
+          <LogInIcon className="mr-2" />
+          {pending ? "Entrando..." : "Entrar"}
+        </>
+      ) : (
+        <>
+          <UserPlusIcon className="mr-2" />
+          {pending ? "Criando conta..." : "Criar conta"}
+        </>
+      )}
+    </Button>
+  );
+};
 
 const LoginForm = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (formData: FormData) => {
-    try {
-      setIsLoading(true);
-      
-      if (isLogin) {
-        await loginAction(formData);
-      } else {
-        await registerAction(formData);
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro inesperado");
-    } finally {
-      setIsLoading(false);
+  // Hook `useFormState` para gerenciar o estado do formulário e os erros da action.
+  const [loginState, loginFormAction] = useFormState(loginAction, undefined);
+  const [registerState, registerFormAction] = useFormState(
+    registerAction,
+    undefined,
+  );
+
+  // `useEffect` para exibir um toast de erro quando a action retornar um.
+  useEffect(() => {
+    if (loginState?.error) {
+      toast.error(loginState.error);
     }
-  };
+    if (registerState?.error) {
+      toast.error(registerState.error);
+    }
+  }, [loginState, registerState]);
 
   return (
     <div className="space-y-6">
-      <form action={handleSubmit} className="space-y-4">
+      <form
+        action={isLogin ? loginFormAction : registerFormAction}
+        className="space-y-4"
+      >
         {!isLogin && (
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
@@ -41,11 +67,10 @@ const LoginForm = () => {
               type="text"
               placeholder="Seu nome completo"
               required
-              disabled={isLoading}
             />
           </div>
         )}
-        
+
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -54,10 +79,9 @@ const LoginForm = () => {
             type="email"
             placeholder="seu@email.com"
             required
-            disabled={isLoading}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="password">Senha</Label>
           <Input
@@ -66,36 +90,18 @@ const LoginForm = () => {
             type="password"
             placeholder="Sua senha"
             required
-            disabled={isLoading}
             minLength={6}
           />
         </div>
-        
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLogin ? (
-            <>
-              <LogInIcon className="mr-2" />
-              {isLoading ? "Entrando..." : "Entrar"}
-            </>
-          ) : (
-            <>
-              <UserPlusIcon className="mr-2" />
-              {isLoading ? "Criando conta..." : "Criar conta"}
-            </>
-          )}
-        </Button>
+
+        <SubmitButton isLogin={isLogin} />
       </form>
-      
+
       <div className="text-center">
-        <Button
-          variant="link"
-          onClick={() => setIsLogin(!isLogin)}
-          disabled={isLoading}
-        >
-          {isLogin 
-            ? "Não tem uma conta? Criar conta" 
-            : "Já tem uma conta? Fazer login"
-          }
+        <Button variant="link" onClick={() => setIsLogin(!isLogin)}>
+          {isLogin
+            ? "Não tem uma conta? Criar conta"
+            : "Já tem uma conta? Fazer login"}
         </Button>
       </div>
     </div>

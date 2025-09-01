@@ -1,256 +1,105 @@
 import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
 import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
-import { requireAuth } from "@/app/_lib/auth";
 import { dateParamSchema } from "@/app/_lib/validations";
-import {
-  addMonths,
-  startOfMonth,
-  endOfMonth,
-} from "date-fns";
+import { addMonths } from "date-fns";
+import { AuthUser } from "../../_lib/auth";
 
-export const getDashboard = async (month: string, year: string, userId: string) => {
-  // Validação dos parâmetros
-  const { month: validMonth, year: validYear } = dateParamSchema.parse({ month, year });
-  
-  const referenceDate = new Date(`${validYear}-${validMonth}-01`);
+export const getDashboard = async (
+  month: string,
+  year: string,
+  user: AuthUser,
+) => {
+  const { month: validMonth, year: validYear } = dateParamSchema.parse({
+    month,
+    year,
+  });
 
-  const currentMonthStart = startOfMonth(referenceDate);
-  const currentMonthEnd = endOfMonth(referenceDate);
+  // --- INÍCIO DA CORREÇÃO DE DATA ---
+  // Cria as datas de início e fim do mês de forma segura,
+  // evitando problemas de fuso horário.
+  // O mês no construtor do Date é 0-indexed (janeiro = 0), então subtraímos 1.
+  const yearNum = parseInt(validYear);
+  const monthIndex = parseInt(validMonth) - 1;
 
-  // Condição base para filtrar transações
-  const where = {
-    userId,
-    date: {
-      gte: currentMonthStart,
-      lte: currentMonthEnd,
-    },
-  };
+  const startDate = new Date(yearNum, monthIndex, 1);
+  // Para obter o fim do mês, vamos para o início do próximo mês e subtraímos 1 milissegundo.
+  const endDate = new Date(yearNum, monthIndex + 1, 1);
+  endDate.setMilliseconds(endDate.getMilliseconds() - 1);
+  // --- FIM DA CORREÇÃO DE DATA ---
 
-  // Calcular totais por tipo de transação
-  const depositsTotal = Number(
-    (
-      await db.transaction.aggregate({
-        where: { ...where, type: "DEPOSIT" },
-        _sum: { amount: true },
-      })
-    )?._sum?.amount || 0,
-  );
-  
-  const investmentsTotal = Number(
-    (
-      await db.transaction.aggregate({
-        where: { ...where, type: "INVESTMENT" },
-        _sum: { amount: true },
-      })
-    )?._sum?.amount || 0,
-  );
-
-  // Calcular despesas considerando parcelas
-  const expenses = await db.transaction.findMany({
+  // A busca agora usa as datas corretas
+  const allTransactionsInPeriod = await db.transaction.findMany({
     where: {
-      userId,
-      type: "EXPENSE",
+      userId: user.id,
+      // A transação deve ter começado em ou antes do fim do mês
+      date: { lte: endDate },
     },
   });
 
-  // Filtrar despesas considerando parcelas
-  const filteredExpenses = expenses.filter((expense) => {
-    if (expense.installments && expense.installments > 1) {
-      for (let i = 0; i < expense.installments; i++) {
-        const installmentMonth = addMonths(expense.date, i);
-        if (
-          installmentMonth >= currentMonthStart &&
-          installmentMonth <= currentMonthEnd
-        ) {
-          return true;
-        }
-      }
-    } else {
-      return (
-        expense.date >= currentMonthStart && expense.date <= currentMonthEnd
-      );
-    }
-    return false;
-  });
-
-  // Calcular total de despesas
-  const nonParcelledExpenses = filteredExpenses.filter(
-    (transaction) => !transaction.installments || transaction.installments <= 1,
-  );
-
-  const distributedExpenses = filteredExpenses
-    .filter((transaction) => transaction.installments > 1)
-    .flatMap((transaction) => {
-      const installmentAmount =
-        Number(transaction.amount) / transaction.installments;
-
-      return Array.from({ length: transaction.installments }, (_, index) => {
-        const installmentDate = addMonths(transaction.date, index);
-        const isInstallmentInReferenceMonth =
-          installmentDate.getFullYear() === referenceDate.getFullYear() &&
-          installmentDate.getMonth() === referenceDate.getMonth();
-
-        return isInstallmentInReferenceMonth
-          ? { date: installmentDate, amount: installmentAmount }
-          : null;
-      }).filter((installment) => installment !== null);
-    });
-
-  let expensesTotal = distributedExpenses.reduce(
-    (total, installment) => total + installment.amount,
-    0,
-  );
-
-  nonParcelledExpenses.forEach((transaction) => {
-    expensesTotal += Number(transaction.amount);
-  });
-
-  // Calcular saldo
-  const balance = depositsTotal - investmentsTotal - expensesTotal;
-
-  // Buscar todas as transações para cálculo de percentuais
-  const transactions = await db.transaction.findMany({
-    where: {
-      userId,
-      OR: [
-        {
-          date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
-          },
-        },
-        { installments: { gte: 1 } },
-      ],
-    },
-  });
-
-  // Calcular total considerando parcelas
-  const transactionsTotal = transactions.reduce((total, transaction) => {
-    if (transaction.installments && transaction.installments > 1) {
-      const installmentAmount =
-        Number(transaction.amount) / transaction.installments;
-
-      for (let i = 0; i < transaction.installments; i++) {
-        const installmentMonth = addMonths(transaction.date, i);
-        if (installmentMonth > currentMonthEnd) {
-          break;
-        }
-        if (
-          installmentMonth >= currentMonthStart &&
-          installmentMonth <= currentMonthEnd
-        ) {
-          total += installmentAmount;
-        }
-      }
-    } else {
-      if (
-        transaction.date >= currentMonthStart &&
-        transaction.date <= currentMonthEnd
-      ) {
-        total += Number(transaction.amount);
-      }
-    }
-
-    return total;
-  }, 0);
-
-  // Calcular percentuais por tipo
-  const typesPercentage: TransactionpercentagePerType = {
-    [TransactionType.DEPOSIT]: Math.round(
-      transactionsTotal > 0 ? (Number(depositsTotal) / Number(transactionsTotal)) * 100 : 0,
-    ),
-    [TransactionType.EXPENSE]: Math.round(
-      transactionsTotal > 0 ? (Number(expensesTotal) / Number(transactionsTotal)) * 100 : 0,
-    ),
-    [TransactionType.INVESTMENT]: Math.round(
-      transactionsTotal > 0 ? (Number(investmentsTotal) / Number(transactionsTotal)) * 100 : 0,
-    ),
-  };
-
-  // Calcular despesas por categoria
-  const expensesCategory = await db.transaction.findMany({
-    where: {
-      userId,
-      type: TransactionType.EXPENSE,
-      OR: [
-        {
-          date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
-          },
-        },
-        { installments: { gte: 1 } },
-      ],
-    },
-    select: {
-      category: true,
-      amount: true,
-      installments: true,
-      date: true,
-    },
-  });
-
+  let depositsTotal = 0;
+  let investmentsTotal = 0;
+  let expensesTotal = 0;
   const totalExpensePerCategory: TotalExpensePerCategory[] = [];
 
-  expensesCategory.forEach((expense) => {
-    const existingCategory = totalExpensePerCategory.find(
-      (category) => category.category === expense.category,
-    );
-    
-    const adjustedAmount = Number(expense.amount) / (expense.installments || 1);
+  allTransactionsInPeriod.forEach((transaction) => {
+    const installmentAmount =
+      Number(transaction.amount) / transaction.installments;
 
-    if (expense.installments && expense.installments > 1) {
-      for (let i = 0; i < expense.installments; i++) {
-        const installmentMonth = addMonths(expense.date, i);
-        if (installmentMonth > currentMonthEnd) {
-          break;
-        }
-        if (
-          installmentMonth >= currentMonthStart &&
-          installmentMonth <= currentMonthEnd
-        ) {
-          if (existingCategory) {
-            existingCategory.totalAmount += adjustedAmount;
-          } else {
-            totalExpensePerCategory.push({
-              category: expense.category,
-              totalAmount: adjustedAmount,
-              percentageOfTotal: 0,
-            });
-          }
-        }
-      }
-    } else {
-      if (
-        expense.date >= currentMonthStart &&
-        expense.date <= currentMonthEnd
-      ) {
-        if (existingCategory) {
-          existingCategory.totalAmount += adjustedAmount;
-        } else {
-          totalExpensePerCategory.push({
-            category: expense.category,
-            totalAmount: adjustedAmount,
-            percentageOfTotal: 0,
-          });
+    for (let i = 0; i < transaction.installments; i++) {
+      const installmentDate = addMonths(transaction.date, i);
+
+      if (installmentDate >= startDate && installmentDate <= endDate) {
+        switch (transaction.type) {
+          case TransactionType.DEPOSIT:
+            depositsTotal += installmentAmount;
+            break;
+          case TransactionType.INVESTMENT:
+            investmentsTotal += installmentAmount;
+            break;
+          case TransactionType.EXPENSE:
+            expensesTotal += installmentAmount;
+            const existingCategory = totalExpensePerCategory.find(
+              (c) => c.category === transaction.category,
+            );
+            if (existingCategory) {
+              existingCategory.totalAmount += installmentAmount;
+            } else {
+              totalExpensePerCategory.push({
+                category: transaction.category,
+                totalAmount: installmentAmount,
+                percentageOfTotal: 0,
+              });
+            }
+            break;
         }
       }
     }
   });
 
-  // Calcular percentuais por categoria
+  const balance = depositsTotal - investmentsTotal - expensesTotal;
+  const transactionsTotal = depositsTotal + investmentsTotal + expensesTotal;
+
+  const typesPercentage: TransactionpercentagePerType = {
+    DEPOSIT: Math.round(
+      transactionsTotal > 0 ? (depositsTotal / transactionsTotal) * 100 : 0,
+    ),
+    EXPENSE: Math.round(
+      transactionsTotal > 0 ? (expensesTotal / transactionsTotal) * 100 : 0,
+    ),
+    INVESTMENT: Math.round(
+      transactionsTotal > 0 ? (investmentsTotal / transactionsTotal) * 100 : 0,
+    ),
+  };
+
   totalExpensePerCategory.forEach((category) => {
     category.percentageOfTotal = Math.round(
       expensesTotal > 0 ? (category.totalAmount / expensesTotal) * 100 : 0,
     );
   });
 
-  // Buscar últimas transações
   const lastTransactions = await db.transaction.findMany({
-    where: {
-      userId,
-    },
+    where: { userId: user.id },
     orderBy: { date: "desc" },
     take: 15,
   });
@@ -263,5 +112,6 @@ export const getDashboard = async (month: string, year: string, userId: string) 
     typesPercentage,
     totalExpensePerCategory,
     lastTransactions: JSON.parse(JSON.stringify(lastTransactions)),
+    user: JSON.parse(JSON.stringify(user)),
   };
 };

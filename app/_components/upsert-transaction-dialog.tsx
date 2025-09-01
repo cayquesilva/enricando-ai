@@ -43,11 +43,11 @@ import {
 import { DatePicker } from "./ui/date-picker";
 import { upsertTransaction } from "../_actions/add-transaction";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface UpsertTransactionDialogProps {
   isOpen: boolean;
-  defaultValues?: FormSchema;
+  defaultValues?: Partial<FormSchema>;
   transactionId?: string;
   setIsOpen: (isOpen: boolean) => void;
 }
@@ -92,12 +92,62 @@ const UpsertTransactionDialog = ({
   transactionId,
   setIsOpen,
 }: UpsertTransactionDialogProps) => {
-  const [selectedType, setSelectedType] = useState<TransactionType>(
-    TransactionType.EXPENSE,
+  const form = useForm<FormSchema>({
+    resolver: zodResolver(formSchema),
+    defaultValues: defaultValues
+      ? {
+          ...defaultValues,
+          date:
+            typeof defaultValues.date === "string"
+              ? new Date(defaultValues.date)
+              : defaultValues.date,
+          installments: defaultValues.installments
+            ? parseInt(defaultValues.installments.toString(), 10)
+            : defaultValues.installments,
+        }
+      : {
+          name: "",
+          amount: 0,
+          category: TransactionCategory.OTHER,
+          date: new Date(),
+          paymentMethod: TransactionPaymentMethod.CASH,
+          type: TransactionType.EXPENSE,
+          installments: 1,
+        },
+  });
+  const [selectedType, setSelectedType] = useState<TransactionType | undefined>(
+    defaultValues?.type,
   );
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     TransactionPaymentMethod | undefined
   >(defaultValues?.paymentMethod);
+
+  useEffect(() => {
+    // Sempre que os valores padrão mudarem (ou seja, ao abrir para edição),
+    // ou quando o diálogo abrir, resete o formulário com os novos dados.
+    if (defaultValues) {
+      form.reset({
+        ...defaultValues,
+        date: new Date(defaultValues.date!), // Garante que a data é um objeto Date
+      });
+      // Atualiza também os estados locais que controlam a UI
+      setSelectedType(defaultValues.type);
+      setSelectedPaymentMethod(defaultValues.paymentMethod);
+    } else {
+      // Se não houver valores padrão (modo de criação), resete para o estado inicial
+      form.reset({
+        name: "",
+        amount: 0,
+        type: TransactionType.EXPENSE,
+        category: TransactionCategory.OTHER,
+        paymentMethod: TransactionPaymentMethod.CASH,
+        date: new Date(),
+        installments: 1,
+      });
+      setSelectedType(TransactionType.EXPENSE);
+      setSelectedPaymentMethod(TransactionPaymentMethod.CASH);
+    }
+  }, [defaultValues, isOpen, form]);
 
   // Alterando o estado do tipo ao selecionar um novo tipo
   const handleTypeChange = (value: string) => {
@@ -123,30 +173,6 @@ const UpsertTransactionDialog = ({
     selectedType === TransactionType.INVESTMENT
       ? TRANSACTION_INVESTMENTS_CATEGORY_OPTIONS
       : TRANSACTION_CATEGORY_OPTIONS;
-
-  const form = useForm<FormSchema>({
-    resolver: zodResolver(formSchema),
-    defaultValues: defaultValues
-      ? {
-          ...defaultValues,
-          date:
-            typeof defaultValues.date === "string"
-              ? new Date(defaultValues.date)
-              : defaultValues.date,
-          installments: defaultValues.installments
-            ? parseInt(defaultValues.installments.toString(), 10)
-            : defaultValues.installments,
-        }
-      : {
-          name: "",
-          amount: 0,
-          category: TransactionCategory.OTHER,
-          date: new Date(),
-          paymentMethod: TransactionPaymentMethod.CASH,
-          type: TransactionType.EXPENSE,
-          installments: 1,
-        },
-  });
 
   const onSubmit = async (data: FormSchema) => {
     try {

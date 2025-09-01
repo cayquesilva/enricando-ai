@@ -8,15 +8,22 @@ import { MenuIcon, LogOutIcon, UserIcon, ShieldIcon } from "lucide-react";
 import { useMediaQuery } from "../hook/use-media-query";
 import { Button } from "./ui/button";
 import { logoutAction } from "../_actions/auth/logout";
-import { AuthUser } from "../_lib/auth";
 
 interface NavbarProps {
-  user: AuthUser;
+  user: {
+    name: string;
+    isPremium: boolean;
+    isAdmin: boolean;
+  };
 }
 
 const Navbar = ({ user }: NavbarProps) => {
   const pathname = usePathname();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  if (!user) {
+    return null; // Ou um esqueleto de carregamento (loading skeleton)
+  }
 
   const handleLogout = async () => {
     await logoutAction();

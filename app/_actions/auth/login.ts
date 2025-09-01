@@ -2,7 +2,7 @@
 
 import { db } from "@/app/_lib/prisma";
 import { generateToken } from "@/app/_lib/auth";
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/app/_lib/constants";
+import { ERROR_MESSAGES } from "@/app/_lib/constants";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -13,7 +13,12 @@ const loginSchema = z.object({
   password: z.string().min(1, "Senha é obrigatória"),
 });
 
-export const loginAction = async (formData: FormData) => {
+type FormState = { error: string } | undefined;
+
+export const loginAction = async (
+  prevState: FormState,
+  formData: FormData,
+): Promise<FormState> => {
   try {
     const data = {
       email: formData.get("email") as string,
@@ -27,30 +32,38 @@ export const loginAction = async (formData: FormData) => {
     });
 
     if (!user) {
-      throw new Error(ERROR_MESSAGES.INVALID_CREDENTIALS);
+      return { error: ERROR_MESSAGES.INVALID_CREDENTIALS };
     }
 
-    const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
+    const isValidPassword = await bcrypt.compare(
+      validatedData.password,
+      user.password,
+    );
 
     if (!isValidPassword) {
-      throw new Error(ERROR_MESSAGES.INVALID_CREDENTIALS);
+      return { error: ERROR_MESSAGES.INVALID_CREDENTIALS };
     }
 
+    // Se a autenticação foi bem-sucedida, definimos o cookie
     const token = generateToken(user.id);
-    const cookieStore = await cookies();
-    
-    cookieStore.set("auth-token", token, {
+    cookies().set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
     });
-
-    redirect("/");
   } catch (error) {
+    // O catch agora só lida com erros de validação ou do banco de dados
     if (error instanceof z.ZodError) {
-      throw new Error(error.errors[0].message);
+      return { error: error.errors[0].message };
     }
-    throw error;
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: "Ocorreu um erro inesperado." };
   }
+
+  // O redirect é chamado aqui, fora do try...catch
+  redirect("/");
 };

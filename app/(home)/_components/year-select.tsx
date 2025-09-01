@@ -14,22 +14,20 @@ const YEAR_OPTIONS = [
   { value: "2025", label: "2025" },
 ];
 
-const YearSelect = () => {
+const YearSelect = ({ currentYear }: { currentYear: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Atualiza o parâmetro 'year' sem remover os outros parâmetros
   const handleYearChange = (year: string) => {
-    const params = new URLSearchParams(searchParams.toString()); // Clona os parâmetros existentes
-    params.set("year", year); // Define ou atualiza o parâmetro 'year'
-    router.push(`?${params.toString()}`); // Atualiza a URL com os novos parâmetros
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("year", year);
+    router.push(`?${params.toString()}`);
   };
-
-  const year = searchParams.get("year");
 
   return (
     <Select
-      defaultValue={year ?? ""}
+      defaultValue={currentYear}
       onValueChange={(value) => {
         handleYearChange(value);
       }}

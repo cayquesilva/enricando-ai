@@ -1,41 +1,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken } from "./app/_lib/auth";
 
 export function middleware(request: NextRequest) {
+  const token = request.cookies.get("auth-token")?.value;
   const { pathname } = request.nextUrl;
 
-  // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ["/login"];
-  
-  if (publicRoutes.includes(pathname)) {
-    return NextResponse.next();
+  // Se o utilizador TEM um token e está a tentar aceder a /login, redirecione para a home.
+  if (token && pathname.startsWith("/login")) {
+    console.log("Token válido... redirecionando para rota home");
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Verificar token de autenticação
-  const token = request.cookies.get("auth-token")?.value;
-
-  if (!token) {
+  // Se o utilizador NÃO TEM um token e está a tentar aceder a uma rota protegida,
+  // redirecione para /login.
+  if (!token && pathname !== "/login") {
+    console.log("Token inválido... redirecionando para rota login");
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Verificar se o token é válido
-  const decoded = verifyToken(token);
-  
-  if (!decoded) {
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.delete("auth-token");
-    return response;
-  }
-
+  // Se nenhuma das condições acima for atendida, o pedido pode continuar.
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    // Aplica o middleware a todas as rotas, exceto ficheiros estáticos e internos do Next.js
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };

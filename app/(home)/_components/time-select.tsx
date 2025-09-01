@@ -24,22 +24,24 @@ const MONTH_OPTIONS = [
   { value: "12", label: "Dezembro" },
 ];
 
-const TimeSelect = () => {
+const TimeSelect = ({ currentMonth }: { currentMonth: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Atualiza o parâmetro 'month' sem remover outros parâmetros
   const handleMonthChange = (month: string) => {
-    const params = new URLSearchParams(searchParams.toString()); // Clona os parâmetros existentes
-    params.set("month", month); // Define ou atualiza o parâmetro 'month'
-    router.push(`?${params.toString()}`); // Atualiza a URL com os novos parâmetros
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", month);
+    // Preserva o parâmetro 'year' se ele existir
+    if (!params.has("year")) {
+      params.set("year", new Date().getFullYear().toString());
+    }
+    router.push(`?${params.toString()}`);
   };
-
-  const month = searchParams.get("month");
 
   return (
     <Select
-      defaultValue={month ?? ""}
+      defaultValue={currentMonth}
       onValueChange={(value) => {
         handleMonthChange(value);
       }}

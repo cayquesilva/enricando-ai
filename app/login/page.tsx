@@ -1,16 +1,8 @@
 import Image from "next/image";
-import { getAuthenticatedUser } from "../_lib/auth";
-import { redirect } from "next/navigation";
 import LogoIcon from "../_components/logo";
 import LoginForm from "./_components/login-form";
 
 const LoginPage = async () => {
-  const user = await getAuthenticatedUser();
-  
-  if (user) {
-    redirect("/");
-  }
-  
   return (
     <div className="h-full sm:grid sm:grid-cols-2">
       {/* ESQUERDA */}
@@ -23,7 +15,7 @@ const LoginPage = async () => {
           monitorar suas movimentações e oferecer insights personalizados,
           facilitando o controle do seu orçamento.
         </p>
-        
+
         <LoginForm />
       </div>
 

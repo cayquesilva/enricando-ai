@@ -1,14 +1,33 @@
-import { TRANSACTION_LIMITS } from "@/app/_lib/constants";
-import { getCurrentMonthTransactions } from "../get-current-month-transactions/index";
+import { db } from "../../_lib/prisma";
+import { TRANSACTION_LIMITS } from "../../_lib/constants";
+import { endOfMonth, startOfMonth } from "date-fns";
 
-export const canUserAddTransaction = async (userId: string, isPremium: boolean = false) => {
-  // Usuários premium têm transações ilimitadas
+// A função agora aceita month e year para fazer a verificação no período correto
+export const canUserAddTransaction = async (
+  userId: string,
+  isPremium: boolean,
+  month: string,
+  year: string,
+) => {
   if (isPremium) {
-    return true;
+    return true; // Utilizadores Premium têm transações ilimitadas
   }
 
-  // Usuários gratuitos têm limite mensal
-  const currentMonthTransactions = await getCurrentMonthTransactions(userId);
-  
-  return currentMonthTransactions < TRANSACTION_LIMITS.FREE_PLAN_MONTHLY_LIMIT;
+  // Cria as datas de início e fim do mês selecionado
+  const referenceDate = new Date(`${year}-${month}-01`);
+  const startDate = startOfMonth(referenceDate);
+  const endDate = endOfMonth(referenceDate);
+
+  // Conta as transações do utilizador apenas dentro do mês selecionado
+  const transactionCount = await db.transaction.count({
+    where: {
+      userId,
+      date: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+  });
+
+  return transactionCount < TRANSACTION_LIMITS.FREE_PLAN_MONTHLY_LIMIT;
 };

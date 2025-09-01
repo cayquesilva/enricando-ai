@@ -11,7 +11,7 @@ interface SummaryCardProps {
   userCanAddTransaction?: boolean; // Adicione esta prop opcional
 }
 
-const SummaryCard = async ({
+const SummaryCard = ({
   icon,
   title,
   amount,

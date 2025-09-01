@@ -15,7 +15,7 @@ interface SummaryCards {
   userCanAddTransaction: boolean;
 }
 
-const SummaryCards = async ({
+const SummaryCards = ({
   balance,
   investmentsTotal,
   depositsTotal,

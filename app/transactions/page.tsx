@@ -1,4 +1,4 @@
-"use client"; // A página agora é um Componente de Cliente
+"use client";
 
 import { useEffect, useState } from "react";
 import { Transaction } from "@prisma/client";
@@ -6,67 +6,95 @@ import { DataTable } from "../_components/ui/data-table";
 import { getTransactionColumns } from "./_columns";
 import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
-import { ScrollArea } from "../_components/ui/scroll-area";
 import TimeSelect from "../(home)/_components/time-select";
 import YearSelect from "../(home)/_components/year-select";
-import { getTransactionsPageData } from "../transactions/_actions/get-transactions-page-data";
 import UpsertTransactionDialog from "../_components/upsert-transaction-dialog";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AuthUser } from "../_lib/auth";
+import SummaryCard from "../(home)/_components/summary-card";
+import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+import { Input } from "../_components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../_components/ui/select";
+import { TRANSACTION_CATEGORY_OPTIONS } from "../_constants/transactions";
+import { getTransactionsPageData } from "./_actions/get-transactions-page-data";
 
-// Como a página agora é de cliente, a busca de dados é feita numa Server Action
-// e o resultado é guardado num estado.
+type PageData = {
+  user: AuthUser;
+  transactions: Transaction[];
+  userCanAddTransaction: boolean;
+  totalIncome: number;
+  totalExpenses: number;
+};
 
 const TransactionsPage = () => {
-  // Estado para guardar os dados que vêm do servidor
-  const [data, setData] = useState<{
-    user: AuthUser;
-    transactions: Transaction[];
-    userCanAddTransaction: boolean;
-  } | null>(null);
-
-  // Estados para gerir o diálogo de edição
+  const [data, setData] = useState<PageData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<
     Transaction | undefined
   >(undefined);
 
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+
   const month =
     searchParams.get("month") ||
     String(new Date().getMonth() + 1).padStart(2, "0");
   const year = searchParams.get("year") || String(new Date().getFullYear());
+  const search = searchParams.get("search") || "";
+  const category = searchParams.get("category") || "";
 
-  // useEffect para buscar os dados sempre que a página carrega ou os filtros de data mudam
   useEffect(() => {
     const fetchData = async () => {
-      // Mostra um estado de carregamento enquanto busca novos dados
       setData(null);
-      const result = await getTransactionsPageData({ month, year });
+      const result = await getTransactionsPageData({
+        month,
+        year,
+        search,
+        category,
+      });
       setData(result);
     };
     fetchData();
-  }, [month, year]);
+  }, [month, year, search, category]);
 
-  // Função que será chamada pelo botão "Editar" na linha da tabela
+  const handleFilterChange = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const handleEdit = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsDialogOpen(true);
   };
 
-  // Se os dados ainda não carregaram, mostra uma mensagem de "A carregar..."
   if (!data) {
-    // Pode substituir isto por um componente de "loading skeleton" mais elaborado
-    return <div className="p-6">A carregar transações...</div>;
+    return <div className="p-6">A carregar...</div>;
   }
 
-  // Desestrutura os dados após o carregamento
-  const { user, transactions, userCanAddTransaction } = data;
-  // Gera as definições das colunas, passando os dados necessários
+  const {
+    user,
+    transactions,
+    userCanAddTransaction,
+    totalIncome,
+    totalExpenses,
+  } = data;
   const columns = getTransactionColumns({ month, year, onEdit: handleEdit });
 
   return (
-    <>
+    // 1. O container principal agora ocupa a altura total do ecrã
+    <div className="flex h-screen flex-col">
       <Navbar
         user={{
           name: user.name,
@@ -74,10 +102,53 @@ const TransactionsPage = () => {
           isAdmin: user.isAdmin,
         }}
       />
-      <div className="flex flex-col space-y-6 overflow-hidden p-6">
+      {/* 2. O conteúdo principal é um container flex que CRESCE para ocupar o espaço */}
+      <div className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6">
         <div className="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
           <h1 className="text-2xl font-bold">Transações</h1>
-          <div className="flex items-center gap-4">
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <SummaryCard
+            icon={<TrendingUpIcon size={16} className="text-primary" />}
+            title="Receita do Mês (filtrada)"
+            amount={totalIncome}
+          />
+          <SummaryCard
+            icon={<TrendingDownIcon size={16} className="text-red-500" />}
+            title="Despesa do Mês (filtrada)"
+            amount={totalExpenses}
+          />
+        </div>
+        <div className="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
+          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+            <Input
+              placeholder="Pesquisar por nome..."
+              defaultValue={search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+              className="w-full md:max-w-xs"
+            />
+            <Select
+              defaultValue={category}
+              onValueChange={(value) => {
+                const filterValue = value === "all" ? "" : value;
+                handleFilterChange("category", filterValue);
+              }}
+            >
+              <SelectTrigger className="w-full md:max-w-xs">
+                <SelectValue placeholder="Filtrar por categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
             <TimeSelect currentMonth={month} />
             <YearSelect currentYear={year} />
             <AddTransactionButton
@@ -85,16 +156,16 @@ const TransactionsPage = () => {
             />
           </div>
         </div>
-        <ScrollArea className="h-full">
+
+        {/* 3. A área da tabela agora está dentro de um container flex que a expande */}
+        <div className="flex-1 overflow-auto">
           <DataTable columns={columns} data={transactions} />
-        </ScrollArea>
+        </div>
       </div>
 
-      {/* O diálogo de edição agora vive aqui, a nível da página */}
       <UpsertTransactionDialog
         isOpen={isDialogOpen}
         setIsOpen={setIsDialogOpen}
-        // Passa a transação selecionada como valor padrão para o formulário
         defaultValues={
           selectedTransaction
             ? {
@@ -105,7 +176,7 @@ const TransactionsPage = () => {
         }
         transactionId={selectedTransaction?.id}
       />
-    </>
+    </div>
   );
 };
 

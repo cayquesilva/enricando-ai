@@ -13,24 +13,25 @@ import { differenceInCalendarMonths } from "date-fns";
 import { FormatCurrency } from "@/app/_utils/currency";
 import DeleteTransactionButton from "../_components/delete-transaction-button";
 
+// 1. O tipo de dados para cada linha agora pode ser uma transação normal
+// ou o nosso objeto separador especial.
+type TransactionRow = Transaction & { isSeparator?: boolean };
+
 interface GetColumnsProps {
   month: string;
   year: string;
   onEdit: (transaction: Transaction) => void;
 }
 
+// A função agora espera receber dados do tipo 'TransactionRow'.
 export const getTransactionColumns = ({
   month,
   year,
   onEdit,
-}: GetColumnsProps): ColumnDef<Transaction>[] => {
-  // --- INÍCIO DA CORREÇÃO ---
-  // Criamos a data de referência de forma segura para evitar problemas de fuso horário.
-  // O mês no construtor do Date é 0-indexed (janeiro = 0), então subtraímos 1.
+}: GetColumnsProps): ColumnDef<TransactionRow>[] => {
   const yearNum = parseInt(year);
   const monthIndex = parseInt(month) - 1;
   const referenceDate = new Date(yearNum, monthIndex, 1);
-  // --- FIM DA CORREÇÃO ---
 
   return [
     {
@@ -44,34 +45,66 @@ export const getTransactionColumns = ({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      // 2. A célula do nome agora renderiza o separador ou o nome da transação.
+      cell: ({ row }) => {
+        const transaction = row.original;
+
+        // Se esta linha for um separador, renderize-o de forma especial.
+        if (transaction.isSeparator) {
+          return (
+            <span className="whitespace-nowrap text-green-500">
+              Parcelas de Meses Anteriores
+            </span>
+          );
+        }
+
+        return <span className="font-bold">{transaction.name}</span>;
+      },
     },
     {
       accessorKey: "type",
       header: "Tipo",
-      cell: ({ row }) => <TransactionTypeBadge transaction={row.original} />,
+      cell: ({ row }) => {
+        // Não renderiza nada para a linha do separador.
+        // Se esta linha for um separador, renderize-o de forma especial.
+        if (row.original.isSeparator) {
+          return null;
+        }
+        return <TransactionTypeBadge transaction={row.original} />;
+      },
     },
     {
       accessorKey: "category",
       header: "Categoria",
-      cell: ({ row }) => TRANSACTION_CATEGORY_LABELS[row.original.category],
+      cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
+        return TRANSACTION_CATEGORY_LABELS[row.original.category];
+      },
     },
     {
       accessorKey: "paymentMethod",
       header: "Método de Pagamento",
-      cell: ({ row }) =>
-        TRANSACTION_PAYMENT_METHOD_LABELS[row.original.paymentMethod],
+      cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
+        return TRANSACTION_PAYMENT_METHOD_LABELS[row.original.paymentMethod];
+      },
     },
     {
       accessorKey: "installments",
       header: "Parcelas",
       cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
         const transaction = row.original;
         if (transaction.installments > 1) {
-          // A função de cálculo agora usa a `referenceDate` correta
           const currentInstallment =
             differenceInCalendarMonths(referenceDate, transaction.date) + 1;
 
-          // Garante que a parcela atual está dentro do intervalo válido
           if (
             currentInstallment >= 1 &&
             currentInstallment <= transaction.installments
@@ -85,16 +118,23 @@ export const getTransactionColumns = ({
     {
       accessorKey: "date",
       header: "Data",
-      cell: ({ row }) =>
-        new Date(row.original.date).toLocaleDateString("pt-BR", {
+      cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
+        return new Date(row.original.date).toLocaleDateString("pt-BR", {
           day: "2-digit",
           month: "short",
-        }),
+        });
+      },
     },
     {
       accessorKey: "amount",
       header: "Valor",
       cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
         const transaction = row.original;
         const installmentAmount =
           Number(transaction.amount) / transaction.installments;
@@ -114,6 +154,9 @@ export const getTransactionColumns = ({
       id: "actions",
       header: "Ações",
       cell: ({ row }) => {
+        if (row.original.isSeparator) {
+          return null;
+        }
         const transaction = row.original;
         return (
           <div className="flex gap-2">

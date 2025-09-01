@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Transaction } from "@prisma/client";
+import { Transaction as PrismaTransaction } from "@prisma/client";
 import { DataTable } from "../_components/ui/data-table";
 import { getTransactionColumns } from "./_columns";
 import AddTransactionButton from "../_components/add-transaction-button";
@@ -23,6 +23,10 @@ import {
 } from "../_components/ui/select";
 import { TRANSACTION_CATEGORY_OPTIONS } from "../_constants/transactions";
 import { getTransactionsPageData } from "./_actions/get-transactions-page-data";
+import ReceiptScanner from "../_components/receipt-scanner";
+import { ParsedReceiptData } from "../_lib/ocr-parser";
+
+type Transaction = Omit<PrismaTransaction, "amount"> & { amount: number };
 
 type PageData = {
   user: AuthUser;
@@ -32,12 +36,17 @@ type PageData = {
   totalExpenses: number;
 };
 
+type DialogState = {
+  isOpen: boolean;
+  defaultValues?: Partial<Transaction>;
+  transactionId?: string;
+};
+
 const TransactionsPage = () => {
   const [data, setData] = useState<PageData | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<
-    Transaction | undefined
-  >(undefined);
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+  });
 
   const router = useRouter();
   const pathname = usePathname();
@@ -58,7 +67,7 @@ const TransactionsPage = () => {
       search,
       category,
     });
-    setData(result);
+    setData(result as PageData);
   }, [month, year, search, category]);
 
   useEffect(() => {
@@ -76,8 +85,19 @@ const TransactionsPage = () => {
   };
 
   const handleEdit = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setIsDialogOpen(true);
+    setDialogState({
+      isOpen: true,
+      defaultValues: transaction,
+      transactionId: transaction.id,
+    });
+  };
+
+  const handleDataExtracted = (extractedData: ParsedReceiptData) => {
+    setDialogState({
+      isOpen: true,
+      defaultValues: extractedData, // É um Partial<Transaction>, por isso é compatível
+      transactionId: undefined, // É uma nova transação
+    });
   };
 
   if (!data) {
@@ -158,6 +178,8 @@ const TransactionsPage = () => {
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
             <TimeSelect currentMonth={month} />
             <YearSelect currentYear={year} />
+            <ReceiptScanner onDataExtracted={handleDataExtracted} />
+
             <AddTransactionButton
               userCanAddTransaction={userCanAddTransaction}
             />
@@ -171,17 +193,10 @@ const TransactionsPage = () => {
       </div>
 
       <UpsertTransactionDialog
-        isOpen={isDialogOpen}
-        setIsOpen={setIsDialogOpen}
-        defaultValues={
-          selectedTransaction
-            ? {
-                ...selectedTransaction,
-                amount: Number(selectedTransaction.amount),
-              }
-            : undefined
-        }
-        transactionId={selectedTransaction?.id}
+        isOpen={dialogState.isOpen}
+        setIsOpen={(isOpen) => setDialogState({ ...dialogState, isOpen })}
+        defaultValues={dialogState.defaultValues}
+        transactionId={dialogState.transactionId}
         onSuccess={fetchData}
       />
     </div>

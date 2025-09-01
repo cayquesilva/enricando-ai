@@ -1,6 +1,9 @@
 "use client";
 
-import { Transaction, TransactionType } from "@prisma/client";
+import {
+  Transaction as PrismaTransaction,
+  TransactionType,
+} from "@prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import TransactionTypeBadge from "../_components/type-badge";
 import {
@@ -13,6 +16,8 @@ import { differenceInCalendarMonths } from "date-fns";
 import { FormatCurrency } from "@/app/_utils/currency";
 import DeleteTransactionButton from "../_components/delete-transaction-button";
 import { Badge } from "@/app/_components/ui/badge";
+
+type Transaction = Omit<PrismaTransaction, "amount"> & { amount: number };
 
 // 1. O tipo de dados para cada linha agora pode ser uma transação normal
 // ou o nosso objeto separador especial.

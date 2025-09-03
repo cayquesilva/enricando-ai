@@ -67,7 +67,7 @@ const TransactionsPieChart = ({
   return (
     <>
       {isDesktop ? (
-        <ScrollArea className="col-span-2 lg:col-span-1">
+        <ScrollArea className="col-span-2 h-full lg:col-span-1">
           <Card className="flex h-full min-w-[150px] flex-col p-6">
             <CardContent className="flex-1">
               <ChartContainer

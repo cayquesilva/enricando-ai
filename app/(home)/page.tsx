@@ -10,6 +10,7 @@ import LastTransactions from "./_components/last-transactions";
 import AiReportButton from "./_components/ai-report-button";
 import YearSelect from "./_components/year-select";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
+import HistoricalChart from "./_components/historical-chart"; // Importe o novo componente
 
 interface HomeProps {
   searchParams: {
@@ -56,39 +57,51 @@ const Home = async ({ searchParams }: HomeProps) => {
           isAdmin: user.isAdmin,
         }}
       />
-      <div className="flex h-full flex-col space-y-2 p-4 lg:overflow-hidden">
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="mb-2 flex gap-6 md:mb-0">
-            <AiReportButton
-              month={month!}
-              year={year!}
-              hasPremiumPlan={hasPremiumPlan}
-            />
-            <TimeSelect currentMonth={month} />
-            <YearSelect currentYear={year} />
-          </div>
-        </div>
-        <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-[2fr,1fr] lg:overflow-hidden">
-          <div className="flex h-full flex-col gap-4 lg:overflow-hidden">
-            <SummaryCards
-              {...dashboard}
-              userCanAddTransaction={userCanAddTransaction}
-            />
-            <div className="flex h-full w-full flex-col gap-4 md:grid-rows-1 lg:grid lg:grid-cols-3 lg:overflow-hidden">
-              <TransactionsPieChart {...dashboard} />
-              <ExpensesPerCategory
-                expensesPerCategory={dashboard.totalExpensePerCategory}
+      <main className="flex-1 overflow-y-auto p-6">
+        <div className="space-y-4">
+          {" "}
+          {/* Um container para gerir o espaçamento interno */}
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <div className="mb-2 flex flex-wrap justify-center gap-4 md:mb-0 md:gap-6">
+              <AiReportButton
+                month={month}
+                year={year}
+                hasPremiumPlan={hasPremiumPlan}
               />
+              <TimeSelect currentMonth={month} />
+              <YearSelect currentYear={year} />
             </div>
           </div>
-          <LastTransactions
-            lastTransactions={dashboard.lastTransactions}
-            month={month!}
-            year={year!}
-          />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr,1fr]">
+            <div className="flex flex-col gap-4">
+              <SummaryCards
+                {...dashboard}
+                userCanAddTransaction={userCanAddTransaction}
+              />
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <div className="xl:col-span-1">
+                  <TransactionsPieChart {...dashboard} />
+                </div>
+                <div className="xl:col-span-2">
+                  <ExpensesPerCategory
+                    expensesPerCategory={dashboard.totalExpensePerCategory}
+                  />
+                </div>
+              </div>
+              <div>
+                <HistoricalChart />
+              </div>
+            </div>
+
+            <LastTransactions
+              lastTransactions={dashboard.lastTransactions}
+              month={month}
+              year={year}
+            />
+          </div>
         </div>
-      </div>
+      </main>
     </>
   );
 };

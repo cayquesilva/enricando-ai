@@ -47,6 +47,7 @@ const TransactionsPage = () => {
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
   });
+  const [isFetching, setIsFetching] = useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -59,30 +60,53 @@ const TransactionsPage = () => {
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
 
+  const [inputValue, setInputValue] = useState(search);
+
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      router.replace(`${pathname}?${params.toString()}`);
+    },
+    [pathname, router, searchParams],
+  );
+
+  // A função fetchData agora apenas busca os dados, sem alterar o estado diretamente
   const fetchData = useCallback(async () => {
-    setData(null);
-    const result = await getTransactionsPageData({
-      month,
-      year,
-      search,
-      category,
-    });
-    setData(result as PageData);
+    setIsFetching(true);
+    try {
+      const result = await getTransactionsPageData({
+        month,
+        year,
+        search,
+        category,
+      });
+      setData(result as PageData);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+      setData(null); // Em caso de erro, define data como nulo
+    } finally {
+      setIsFetching(false);
+    }
   }, [month, year, search, category]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const handleFilterChange = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleFilterChange("search", inputValue);
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [inputValue, handleFilterChange]);
 
   const handleEdit = (transaction: Transaction) => {
     setDialogState({
@@ -95,15 +119,33 @@ const TransactionsPage = () => {
   const handleDataExtracted = (extractedData: ParsedReceiptData) => {
     setDialogState({
       isOpen: true,
-      defaultValues: extractedData, // É um Partial<Transaction>, por isso é compatível
-      transactionId: undefined, // É uma nova transação
+      defaultValues: extractedData,
+      transactionId: undefined,
     });
   };
 
-  if (!data) {
-    return <div className="p-6">A carregar...</div>;
+  // --- LÓGICA DE RENDERIZAÇÃO CORRIGIDA ---
+  // 1. Se não houver dados E não estiver a carregar (ex: um erro ocorreu), mostre uma mensagem de erro.
+  if (!data && !isFetching) {
+    return (
+      <div className="p-6">
+        Ocorreu um erro ao carregar os dados. Tente novamente.
+      </div>
+    );
   }
 
+  // 2. Se não houver dados (ou seja, está no carregamento inicial), mostre a Navbar e o ecrã de carregamento.
+  // Isto evita o crash, pois o resto do componente não tenta aceder a 'data'.
+  if (!data) {
+    return (
+      <div className="flex h-screen flex-col">
+        {/* Renderiza uma Navbar "vazia" ou um placeholder se 'user' for necessário */}
+        <div className="p-6">A carregar página...</div>
+      </div>
+    );
+  }
+
+  // A partir daqui, temos a certeza de que 'data' existe
   const {
     user,
     transactions,
@@ -111,7 +153,6 @@ const TransactionsPage = () => {
     totalIncome,
     totalExpenses,
   } = data;
-
   const columns = getTransactionColumns({
     month,
     year,
@@ -120,8 +161,7 @@ const TransactionsPage = () => {
   });
 
   return (
-    // 1. O container principal agora ocupa a altura total do ecrã
-    <div className="flex h-screen flex-col">
+    <div className="flex flex-col">
       <Navbar
         user={{
           name: user.name,
@@ -129,7 +169,6 @@ const TransactionsPage = () => {
           isAdmin: user.isAdmin,
         }}
       />
-      {/* 2. O conteúdo principal é um container flex que CRESCE para ocupar o espaço */}
       <div className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6">
         <div className="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
           <h1 className="text-2xl font-bold">Transações</h1>
@@ -151,8 +190,8 @@ const TransactionsPage = () => {
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
             <Input
               placeholder="Pesquisar por nome..."
-              defaultValue={search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               className="w-full md:max-w-xs"
             />
             <Select
@@ -188,7 +227,13 @@ const TransactionsPage = () => {
 
         {/* 3. A área da tabela agora está dentro de um container flex que a expande */}
         <div className="flex-1 overflow-auto">
-          <DataTable columns={columns} data={transactions} />
+          {isFetching ? (
+            <div className="flex h-full items-center justify-center">
+              <p>A atualizar tabela...</p>
+            </div>
+          ) : (
+            <DataTable columns={columns} data={transactions} />
+          )}
         </div>
       </div>
 

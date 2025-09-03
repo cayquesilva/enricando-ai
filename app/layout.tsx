@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "./_components/ui/sonner";
+import Footer from "./_components/footer"; // 1. Importe o Footer
 
 const mulish = Mulish({
   subsets: ["latin-ext"],
@@ -19,10 +20,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${mulish.className} dark antialiased`}>
-        <div className="flex h-full flex-col lg:overflow-hidden">
-          {children}
-        </div>
+      <body
+        className={`${mulish.className} dark flex min-h-screen flex-col antialiased`}
+      >
+        <main className="flex-1">{children}</main>
+
+        <Footer />
         <Toaster />
       </body>
     </html>

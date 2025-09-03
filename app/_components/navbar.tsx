@@ -65,6 +65,16 @@ const Navbar = ({ user }: NavbarProps) => {
             >
               Assinatura
             </Link>
+            <Link
+              href="/profile"
+              className={
+                pathname === "/profile"
+                  ? "font-bold text-primary"
+                  : "text-muted-foreground"
+              }
+            >
+              Perfil
+            </Link>
             {user.isAdmin && (
               <Link
                 href="/admin"

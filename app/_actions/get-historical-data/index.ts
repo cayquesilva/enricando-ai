@@ -1,7 +1,7 @@
 "use server";
 
-import { requireAuth } from "../_lib/auth";
-import { db } from "../_lib/prisma";
+import { requireAuth } from "../../_lib/auth";
+import { db } from "../../_lib/prisma";
 import {
   startOfMonth,
   endOfMonth,

@@ -4,7 +4,12 @@ import { db } from "../../_lib/prisma";
 import { requireAuth } from "../../_lib/auth";
 import { canUserAddTransaction } from "../../_data/can-user-add-transaction";
 import { addMonths, isMatch } from "date-fns";
-import { Prisma, TransactionType, TransactionCategory } from "@prisma/client";
+import {
+  Prisma,
+  Transaction,
+  TransactionCategory,
+  TransactionType,
+} from "@prisma/client";
 
 interface GetTransactionsDataProps {
   month: string;
@@ -31,11 +36,9 @@ export const getTransactionsPageData = async ({
   const endDate = new Date(yearNum, monthIndex + 1, 1);
   endDate.setMilliseconds(endDate.getMilliseconds() - 1);
 
-  // A query do Prisma agora é mais inteligente para apanhar transações recorrentes
   const where: Prisma.TransactionWhereInput = {
     userId: user.id,
-    date: { lte: endDate }, // A transação deve ter começado ANTES do FIM do mês
-    // E deve terminar DEPOIS do INÍCIO do mês (se tiver uma data de fim)
+    date: { lte: endDate },
     OR: [{ endDate: { gte: startDate } }, { endDate: null }],
     AND: [
       search ? { name: { contains: search, mode: "insensitive" } } : {},
@@ -55,18 +58,14 @@ export const getTransactionsPageData = async ({
     const installmentAmount =
       Number(transaction.amount) / transaction.installments;
 
-    // --- LÓGICA DE FILTRO CORRIGIDA ---
     if (transaction.isRecurring) {
-      // Se for recorrente, simplesmente verificamos se o período é válido.
-      // A query do Prisma já fez a maior parte do trabalho.
       if (transaction.type === TransactionType.DEPOSIT) {
         totalIncome += installmentAmount;
       } else if (transaction.type === TransactionType.EXPENSE) {
         totalExpenses += installmentAmount;
       }
-      return true; // Inclui a transação na lista
+      return true;
     } else {
-      // Se não for recorrente, usamos a lógica de parcelas
       for (let i = 0; i < transaction.installments; i++) {
         const installmentDate = addMonths(transaction.date, i);
         if (installmentDate >= startDate && installmentDate <= endDate) {
@@ -75,12 +74,46 @@ export const getTransactionsPageData = async ({
           } else if (transaction.type === TransactionType.EXPENSE) {
             totalExpenses += installmentAmount;
           }
-          return true; // Inclui a transação na lista
+          return true;
         }
       }
     }
-    return false; // Exclui se nenhuma condição for satisfeita
+    return false;
   });
+
+  // --- INÍCIO DA LÓGICA DO SEPARADOR ---
+  const finalTransactions: (Transaction & { isSeparator?: boolean })[] = [];
+  let separatorInserted = false;
+
+  transactionsInMonth.forEach((transaction) => {
+    const transactionStartedInPreviousMonth = transaction.date < startDate;
+
+    // Se a transação começou num mês anterior E o separador ainda não foi inserido...
+    if (transactionStartedInPreviousMonth && !separatorInserted) {
+      // ...insere o nosso objeto separador especial na lista.
+      finalTransactions.push({
+        id: "separator",
+        isSeparator: true,
+        // Preenchemos o resto com dados falsos para satisfazer o tipo de dados.
+        name: "separator",
+        type: TransactionType.EXPENSE,
+        amount: new Prisma.Decimal(0),
+        category: "OTHER",
+        paymentMethod: "OTHER",
+        date: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        installments: 0,
+        isRecurring: false,
+        endDate: null,
+        userId: user.id,
+      });
+      separatorInserted = true; // Marcamos que o separador já foi inserido.
+    }
+    // Adicionamos a transação real à lista final.
+    finalTransactions.push(transaction);
+  });
+  // --- FIM DA LÓGICA DO SEPARADOR ---
 
   const userCanAddTransaction = await canUserAddTransaction(
     user.id,
@@ -90,7 +123,14 @@ export const getTransactionsPageData = async ({
   );
 
   const safeUser = JSON.parse(JSON.stringify(user));
-  const safeTransactions = JSON.parse(JSON.stringify(transactionsInMonth));
+  // Convertemos 'amount' para número e depois serializamos a lista final
+  const transactionsWithNumberAmount = finalTransactions.map((t) => ({
+    ...t,
+    amount: t.amount.toNumber(),
+  }));
+  const safeTransactions = JSON.parse(
+    JSON.stringify(transactionsWithNumberAmount),
+  );
 
   return {
     user: safeUser,

@@ -23,10 +23,12 @@ import {
 } from "../_components/ui/select";
 import { TRANSACTION_CATEGORY_OPTIONS } from "../_constants/transactions";
 import { getTransactionsPageData } from "./_actions/get-transactions-page-data";
-import ReceiptScanner from "../_components/receipt-scanner";
+import InvoiceScanner from "../_components/invoice-scanner";
+import SingleReceiptScanner from "../_components/single-receipt-scanner";
 import InvoiceReviewDialog, {
   ExtractedTransaction,
 } from "../_components/invoice-review-dialog";
+import { ParsedReceiptData } from "../_lib/ocr-parser";
 
 type Transaction = Omit<PrismaTransaction, "amount"> & { amount: number };
 
@@ -72,6 +74,15 @@ const TransactionsPage = () => {
   const handleDataExtracted = (extractedData: ExtractedTransaction[]) => {
     setExtractedTransactions(extractedData);
     setIsReviewDialogOpen(true);
+  };
+
+  const handleSingleReceiptExtracted = (extractedData: ParsedReceiptData) => {
+    // Abre o diálogo de edição/criação normal, já pré-preenchido
+    setDialogState({
+      isOpen: true,
+      defaultValues: extractedData,
+      transactionId: undefined,
+    });
   };
 
   const handleFilterChange = useCallback(
@@ -221,7 +232,10 @@ const TransactionsPage = () => {
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
             <TimeSelect currentMonth={month} />
             <YearSelect currentYear={year} />
-            <ReceiptScanner onDataExtracted={handleDataExtracted} />
+            <SingleReceiptScanner
+              onDataExtracted={handleSingleReceiptExtracted}
+            />
+            <InvoiceScanner onDataExtracted={handleDataExtracted} />
 
             <AddTransactionButton
               userCanAddTransaction={userCanAddTransaction}

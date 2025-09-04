@@ -70,6 +70,7 @@ const TransactionsPieChart = ({
         <ScrollArea className="col-span-2 h-full lg:col-span-1">
           <Card className="flex h-full min-w-[150px] flex-col p-6">
             <CardContent className="flex-1">
+              <h1 className="text-center text-2xl font-bold">Movimentações</h1>
               <ChartContainer
                 config={chartConfig}
                 className="mx-auto aspect-square max-h-[250px]"

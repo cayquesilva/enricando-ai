@@ -10,7 +10,8 @@ import LastTransactions from "./_components/last-transactions";
 import AiReportButton from "./_components/ai-report-button";
 import YearSelect from "./_components/year-select";
 import { canUserAddTransaction } from "../_data/can-user-add-transaction";
-import HistoricalChart from "./_components/historical-chart"; // Importe o novo componente
+import HistoricalChart from "./_components/historical-chart";
+import BudgetsProgress from "./_components/budgets-progress";
 
 interface HomeProps {
   searchParams: {
@@ -86,6 +87,11 @@ const Home = async ({ searchParams }: HomeProps) => {
                 <div className="xl:col-span-2">
                   <ExpensesPerCategory
                     expensesPerCategory={dashboard.totalExpensePerCategory}
+                  />
+                </div>
+                <div className="xl:col-span-3">
+                  <BudgetsProgress
+                    budgetsProgress={dashboard.budgetsProgress}
                   />
                 </div>
               </div>

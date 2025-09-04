@@ -22,7 +22,7 @@ const Navbar = ({ user }: NavbarProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   if (!user) {
-    return null; // Ou um esqueleto de carregamento (loading skeleton)
+    return null;
   }
 
   const handleLogout = async () => {
@@ -56,24 +56,24 @@ const Navbar = ({ user }: NavbarProps) => {
               Transações
             </Link>
             <Link
+              href="/budgets"
+              className={
+                pathname === "/budgets"
+                  ? "font-bold text-primary"
+                  : "text-muted-foreground"
+              }
+            >
+              Orçamentos
+            </Link>
+            <Link
               href="/subscription"
               className={
                 pathname === "/subscription"
-                  ? "font-bold text-primary"
+                  ? "border-b border-primary font-bold text-primary"
                   : "text-muted-foreground"
               }
             >
               Assinatura
-            </Link>
-            <Link
-              href="/profile"
-              className={
-                pathname === "/profile"
-                  ? "font-bold text-primary"
-                  : "text-muted-foreground"
-              }
-            >
-              Perfil
             </Link>
             {user.isAdmin && (
               <Link
@@ -89,7 +89,10 @@ const Navbar = ({ user }: NavbarProps) => {
             )}
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 transition-colors hover:text-primary"
+            >
               <UserIcon size={16} />
               <span className="text-sm">{user.name}</span>
               {user.isPremium && (
@@ -100,7 +103,8 @@ const Navbar = ({ user }: NavbarProps) => {
               {user.isAdmin && (
                 <ShieldIcon size={16} className="text-yellow-500" />
               )}
-            </div>
+            </Link>
+
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOutIcon size={16} />
               Sair
@@ -116,7 +120,7 @@ const Navbar = ({ user }: NavbarProps) => {
                 <MenuIcon size={32} />
               </DrawerTrigger>
               <DrawerContent className="flex flex-col items-center gap-12 pb-12">
-                <div className="flex items-center gap-2">
+                <Link href="/profile" className="flex items-center gap-2">
                   <UserIcon size={16} />
                   <span className="text-sm">{user.name}</span>
                   {user.isPremium && (
@@ -127,7 +131,7 @@ const Navbar = ({ user }: NavbarProps) => {
                   {user.isAdmin && (
                     <ShieldIcon size={16} className="text-yellow-500" />
                   )}
-                </div>
+                </Link>
                 <Link
                   href="/"
                   className={
@@ -147,6 +151,16 @@ const Navbar = ({ user }: NavbarProps) => {
                   }
                 >
                   Transações
+                </Link>
+                <Link
+                  href="/budgets"
+                  className={
+                    pathname === "/budgets"
+                      ? "border-b border-primary font-bold text-primary"
+                      : "text-muted-foreground"
+                  }
+                >
+                  Orçamentos
                 </Link>
                 <Link
                   href="/subscription"

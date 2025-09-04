@@ -4,6 +4,15 @@ import { TotalExpensePerCategory, TransactionpercentagePerType } from "./types";
 import { dateParamSchema } from "@/app/_lib/validations";
 import { addMonths } from "date-fns";
 import { AuthUser } from "../../_lib/auth";
+import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
+
+export type BudgetProgressData = {
+  category: string;
+  categoryLabel: string;
+  budgetAmount: number;
+  spentAmount: number;
+  percentage: number;
+};
 
 export const getDashboard = async (
   month: string,
@@ -32,6 +41,14 @@ export const getDashboard = async (
       userId: user.id,
       date: { lte: endDate },
       OR: [{ endDate: { gte: startDate } }, { endDate: null }],
+    },
+  });
+
+  const budgets = await db.budget.findMany({
+    where: {
+      userId: user.id,
+      month: monthIndex + 1,
+      year: yearNum,
     },
   });
 
@@ -86,6 +103,24 @@ export const getDashboard = async (
     }
   });
 
+  const budgetsProgress: BudgetProgressData[] = budgets.map((budget) => {
+    const expense = totalExpensePerCategory.find(
+      (e) => e.category === budget.category,
+    );
+    const spentAmount = expense ? expense.totalAmount : 0;
+    const budgetAmount = Number(budget.amount);
+    const percentage =
+      budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+
+    return {
+      category: budget.category,
+      categoryLabel: TRANSACTION_CATEGORY_LABELS[budget.category],
+      budgetAmount,
+      spentAmount,
+      percentage,
+    };
+  });
+
   const balance = depositsTotal - investmentsTotal - expensesTotal;
   const transactionsTotal = depositsTotal + investmentsTotal + expensesTotal;
 
@@ -121,6 +156,7 @@ export const getDashboard = async (
     investmentsTotal,
     expensesTotal,
     typesPercentage,
+    budgetsProgress,
     totalExpensePerCategory,
     lastTransactions: JSON.parse(JSON.stringify(lastTransactions)),
     user: JSON.parse(JSON.stringify(user)),

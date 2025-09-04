@@ -10,6 +10,7 @@
     "prepare": "husky && prisma generate"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^5.21.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",

@@ -8,6 +8,7 @@ export const canUserAddTransaction = async (
   isPremium: boolean,
   month: string,
   year: string,
+  countToAdd: number = 1,
 ) => {
   if (isPremium) {
     return true; // Utilizadores Premium têm transações ilimitadas
@@ -29,5 +30,7 @@ export const canUserAddTransaction = async (
     },
   });
 
-  return transactionCount < TRANSACTION_LIMITS.FREE_PLAN_MONTHLY_LIMIT;
+  return (
+    transactionCount + countToAdd <= TRANSACTION_LIMITS.FREE_PLAN_MONTHLY_LIMIT
+  );
 };

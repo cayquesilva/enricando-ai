@@ -24,7 +24,9 @@ import {
 import { TRANSACTION_CATEGORY_OPTIONS } from "../_constants/transactions";
 import { getTransactionsPageData } from "./_actions/get-transactions-page-data";
 import ReceiptScanner from "../_components/receipt-scanner";
-import { ParsedReceiptData } from "../_lib/ocr-parser";
+import InvoiceReviewDialog, {
+  ExtractedTransaction,
+} from "../_components/invoice-review-dialog";
 
 type Transaction = Omit<PrismaTransaction, "amount"> & { amount: number };
 
@@ -47,6 +49,11 @@ const TransactionsPage = () => {
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
   });
+  const [extractedTransactions, setExtractedTransactions] = useState<
+    ExtractedTransaction[]
+  >([]);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+
   const [isFetching, setIsFetching] = useState(true);
 
   const router = useRouter();
@@ -61,6 +68,11 @@ const TransactionsPage = () => {
   const category = searchParams.get("category") || "";
 
   const [inputValue, setInputValue] = useState(search);
+
+  const handleDataExtracted = (extractedData: ExtractedTransaction[]) => {
+    setExtractedTransactions(extractedData);
+    setIsReviewDialogOpen(true);
+  };
 
   const handleFilterChange = useCallback(
     (key: string, value: string) => {
@@ -113,14 +125,6 @@ const TransactionsPage = () => {
       isOpen: true,
       defaultValues: transaction,
       transactionId: transaction.id,
-    });
-  };
-
-  const handleDataExtracted = (extractedData: ParsedReceiptData) => {
-    setDialogState({
-      isOpen: true,
-      defaultValues: extractedData,
-      transactionId: undefined,
     });
   };
 
@@ -244,6 +248,15 @@ const TransactionsPage = () => {
         transactionId={dialogState.transactionId}
         onSuccess={fetchData}
       />
+
+      {extractedTransactions.length > 0 && (
+        <InvoiceReviewDialog
+          isOpen={isReviewDialogOpen}
+          setIsOpen={setIsReviewDialogOpen}
+          transactions={extractedTransactions}
+          onSuccess={fetchData} // Reutilizamos a sua função de atualização!
+        />
+      )}
     </div>
   );
 };

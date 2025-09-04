@@ -4,12 +4,19 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { CameraIcon, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
-import Tesseract from "tesseract.js";
-import { parseReceiptText, ParsedReceiptData } from "../_lib/ocr-parser";
+import { processInvoice } from "../_actions/process-invoice";
 
-// O componente aceita uma função para ser chamada quando os dados forem extraídos
+// 1. Definimos o tipo para uma única transação extraída pela IA
+// Este tipo pode ser exportado e reutilizado noutros locais, como na sua página
+export type ExtractedTransaction = {
+  name: string;
+  amount: number;
+  date?: string;
+};
+
+// 2. A interface agora espera uma função que recebe um ARRAY de ExtractedTransaction
 interface ReceiptScannerProps {
-  onDataExtracted: (data: ParsedReceiptData) => void;
+  onDataExtracted: (data: ExtractedTransaction[]) => void;
 }
 
 const ReceiptScanner = ({ onDataExtracted }: ReceiptScannerProps) => {
@@ -22,34 +29,34 @@ const ReceiptScanner = ({ onDataExtracted }: ReceiptScannerProps) => {
     if (!file) return;
 
     setIsLoading(true);
-    toast.info("A ler a nota fiscal... Isto pode demorar um momento.");
+    toast.info("A analisar a fatura com IA... Isto pode demorar um pouco.");
+
+    const formData = new FormData();
+    formData.append("invoice", file);
 
     try {
-      // Executa o OCR na imagem
-      const result = await Tesseract.recognize(file, "por", {
-        // 'por' para português
-        logger: (m) => console.log(m), // Opcional: mostra o progresso no console
-      });
+      // A action 'processInvoice' retorna um array de transações
+      const transactions = await processInvoice(formData);
 
-      // Analisa o texto extraído
-      const parsedData = parseReceiptText(result.data.text);
-
-      if (!parsedData.amount) {
-        toast.warning(
-          "Não foi possível detetar o valor total. Por favor, preencha manualmente.",
-        );
-      } else {
-        toast.success("Dados da nota fiscal lidos com sucesso!");
+      if (!transactions || transactions.length === 0) {
+        toast.warning("Nenhuma transação encontrada na fatura.");
+        setIsLoading(false);
+        return;
       }
 
-      // Envia os dados extraídos para o componente pai
-      onDataExtracted(parsedData);
+      toast.success(`${transactions.length} transações encontradas!`);
+
+      // Enviamos o array completo para o componente pai
+      onDataExtracted(transactions);
     } catch (error) {
       console.error(error);
-      toast.error("Ocorreu um erro ao processar a imagem.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro ao processar a fatura.",
+      );
     } finally {
       setIsLoading(false);
-      // Reseta o input para permitir selecionar o mesmo ficheiro novamente
       event.target.value = "";
     }
   };
@@ -63,14 +70,14 @@ const ReceiptScanner = ({ onDataExtracted }: ReceiptScannerProps) => {
           ) : (
             <CameraIcon className="mr-2 h-4 w-4" />
           )}
-          Ler Nota Fiscal
+          Analisar Fatura
           <input
             id="receipt-upload"
             type="file"
-            accept="image/*"
-            capture="environment" // Pede para usar a câmara em dispositivos móveis
+            accept="image/*,application/pdf"
+            capture="environment"
             onChange={handleFileChange}
-            className="sr-only" // Esconde o input feio
+            className="sr-only"
             disabled={isLoading}
           />
         </label>
